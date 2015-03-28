@@ -3,14 +3,11 @@ package example.com.cominghome;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.hardware.GeomagneticField;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
@@ -18,11 +15,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
-import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -36,19 +31,16 @@ public class MapsActivity extends FragmentActivity {
 
     private static final String MY_ROUTE_POINTS_KEY = "key";
     public static final String TAG = "myTag";
+    public static boolean active;
 
     private SharedPreferences preferences;
-    private LocationManager mLocationManager;
 
     private GoogleMap mMap;
     private LinkedList<LatLng> routeList = new LinkedList<>();
 
-    private LocationListener mLocationListener;
     private Location me;
     private Marker beginLocation, endLocation, currentLocation;
 
-    private float mDeclination;
-    private float[] mRotationMatrix = new float[16];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,98 +48,24 @@ public class MapsActivity extends FragmentActivity {
         setContentView(R.layout.activity_maps);
         if (mMap == null)
             mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
-        //clearMyRoute();
+
         routeList = parseRouteByString(getMyRouteString());
-        
-        mLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-        mLocationListener = new LocationListener() {
-            @Override
-            public void onLocationChanged(Location location) {
-                if (me != null)
-                    if (location.getLatitude() == me.getLatitude() && location.getLongitude() == me.getLongitude())
-                        return;
-                me = location;
-                Log.d(TAG, "Latitude " + location.getLatitude() + ", longitude " + location.getLongitude());
-                //routeList.add(new LatLng(location.getLatitude(), location.getLongitude()));
-                suka();
-                if (null != currentLocation)
-                    currentLocation.setPosition(new LatLng(me.getLatitude(), me.getLongitude()));
-                GeomagneticField field = new GeomagneticField(
-                        (float) location.getLatitude(),
-                        (float) location.getLongitude(),
-                        (float) location.getAltitude(),
-                        System.currentTimeMillis()
-                );
-                mDeclination = field.getDeclination();
-            }
 
-            @Override
-            public void onStatusChanged(String provider, int status, Bundle extras) {
-                Log.d(TAG, "onStatusChanged");
-            }
-
-            @Override
-            public void onProviderEnabled(String provider) {
-                Log.d(TAG, "onProviderEnabled");
-            }
-
-            @Override
-            public void onProviderDisabled(String provider) {
-                Log.d(TAG, "onProviderDisabled");
-            }
-        };
-
-//        me = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
         Log.d(TAG, "Resume: routelist.size =  " + routeList.size());
 
         mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng latLng) {
-//                if (routeList.isEmpty())
-//                    suka();
                 if (routeList.size() > 1)
                     drawLine();
             }
         });
-        //sensorListenerOn();
-
         setButtons();
 
-        set2();
-
+        setOnGoHomeMarkerListener();
     }
 
-    private void sensorListenerOn() {
-        SensorManager manager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        Sensor sensorRotation = manager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
-        SensorEventListener rotationEventListener = new SensorEventListener() {
-            @Override
-            public void onSensorChanged(SensorEvent event) {
-                if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
-                    SensorManager.getRotationMatrixFromVector(mRotationMatrix, event.values);
-                    float[] orientation = new float[3];
-                    SensorManager.getOrientation(mRotationMatrix, orientation);
-                    double bearing = Math.toDegrees(orientation[0] + mDeclination);
-                    //updateCamera(bearing);
-                }
-            }
-
-            @Override
-            public void onAccuracyChanged(Sensor sensor, int accuracy) {
-            }
-        };
-        manager.registerListener(rotationEventListener, sensorRotation, SensorManager.SENSOR_DELAY_GAME);
-    }
-
-    private void updateCamera(double bearing) {
-        CameraPosition oldPos = mMap.getCameraPosition();
-        CameraPosition newPos = CameraPosition.builder(oldPos).
-                bearing((float) bearing).build();
-        mMap.moveCamera(CameraUpdateFactory.newCameraPosition(newPos));
-    }
-
-    private void set2() {
+    private void setOnGoHomeMarkerListener() {
         SensorManager mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mSensorManager.registerListener(
                 new SensorEventListener() {
@@ -173,7 +91,6 @@ public class MapsActivity extends FragmentActivity {
         btnGo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //Toast.makeText(getApplicationContext(), "Haloooo", Toast.LENGTH_SHORT).show();
                 try {
                     beginLocation = mMap.addMarker(new MarkerOptions()
                             .position(new LatLng(me.getLatitude(), me.getLongitude())).title("start")
@@ -188,7 +105,6 @@ public class MapsActivity extends FragmentActivity {
         btnGoHome.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //Toast.makeText(getApplicationContext(), "go home", Toast.LENGTH_SHORT).show();
                 try {
                     endLocation = mMap.addMarker(new MarkerOptions()
                             .position(new LatLng(me.getLatitude(), me.getLongitude())).title("end"));
@@ -205,7 +121,6 @@ public class MapsActivity extends FragmentActivity {
         btnReset.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //Toast.makeText(getApplicationContext(), "reset", Toast.LENGTH_SHORT).show();
                 try {
                     beginLocation.remove();
                     endLocation.remove();
@@ -229,10 +144,7 @@ public class MapsActivity extends FragmentActivity {
 
     @Override
     protected void onDestroy() {
-        //mLocationManager.removeUpdates(mLocationListener);
         saveMyRoute();
-        mLocationManager.removeUpdates(mLocationListener);
-        Log.d(TAG, "Pause: routelist.size =  " + routeList.size());
         super.onDestroy();
     }
 
@@ -246,22 +158,16 @@ public class MapsActivity extends FragmentActivity {
         super.onResume();
     }
 
-    private void suka() {
-        //me = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        if (mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
-            Toast.makeText(this, "Провайдер есть", Toast.LENGTH_SHORT).show();
-        else Toast.makeText(this, "нету провайдера даже", Toast.LENGTH_SHORT).show();
+    @Override
+    protected void onStart() {
+        super.onStart();
+        active = true;
+    }
 
-//        if (routeList.size() == 0)
-//            Toast.makeText(this, "не существует getLastKnowLocation", Toast.LENGTH_SHORT).show();
-//        else {
-        LatLng latLng = new LatLng(me.getLatitude(), me.getLongitude());
-        Toast.makeText(this, "lat: " + latLng.latitude + "\nlong: " + latLng.longitude,
-                Toast.LENGTH_SHORT).show();
-//            if (!routeList.getLast().equals(latLng))
-        routeList.add(latLng);
-//        }
-        Log.d(TAG, "suka: routelist.size = " + routeList.size());
+    @Override
+    protected void onStop() {
+        super.onStop();
+        active = false;
     }
 
     private void drawLine() {
@@ -273,39 +179,6 @@ public class MapsActivity extends FragmentActivity {
                 .color(Color.GREEN);
         line = mMap.addPolyline(options);
     }
-//          private String getAddress(LatLng coords) {
-//        String curAddress = "";
-//        try {
-//            Geocoder geocoder = new Geocoder(this);
-//            List<Address> adds = geocoder.getFromLocation(coords.latitude, coords.longitude, 1);
-//            if (adds != null && adds.size() > 0) {
-//                Address add = adds.get(0);
-//                int max = add.getMaxAddressLineIndex();
-//                if (max != -1) {
-//                    for (int i = 0; i < max; i++)
-//                        curAddress += add.getAddressLine(i) + " ";
-//                }
-//            }
-//        } catch (Exception e) {
-//            Toast.makeText(this, "fuck you", Toast.LENGTH_SHORT).show();
-//        }
-//        return curAddress;
-//    }
-//
-//    private LatLng getAddress(String strAddress) {
-//        Geocoder coder = new Geocoder(this);
-//        List<Address> address;
-//        try {
-//            address = coder.getFromLocationName(strAddress, 5);
-//            if (address == null) {
-//                return null;
-//            }
-//            Address location = address.get(0);
-//
-//            return new LatLng(location.getLatitude(), location.getLongitude());
-//        } catch (IOException e) { e.printStackTrace(); }
-//        return new LatLng(0, 0);
-//    }
 
     private void saveMyRoute() {
         preferences = getPreferences(MODE_PRIVATE);
