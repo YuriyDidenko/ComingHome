@@ -1,4 +1,4 @@
-package example.com.cominghome;
+package example.com.cominghome.ui;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -8,6 +8,10 @@ import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
+
+import example.com.cominghome.R;
+import example.com.cominghome.app.App;
+import example.com.cominghome.background.LocationService;
 
 public class Logo extends Activity {
     private Intent intentService;
@@ -34,7 +38,13 @@ public class Logo extends Activity {
     @Override
     protected void onStop() {
         super.onStop();
-        Log.d(MapsActivity.TAG, "Logo: onStop");
+        Log.d(App.TAG, "Logo: onStop");
+        //stopService(intentService);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
         stopService(intentService);
     }
 }
