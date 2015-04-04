@@ -4,18 +4,15 @@ public class RoutePoint {
     public static final String FIELD_ID = "_id";
     public static final String FIELD_LATITUDE = "latitude";
     public static final String FIELD_LONGTITUDE = "longtitude";
-    //public static final String FIELD_TIME = "time";
 
     private String id;
     private String latitude;
     private String longtitude;
-    //private String time;
 
-    public RoutePoint(String id, String latitude, String longtitude/*, String time*/) {
+    public RoutePoint(String id, String latitude, String longtitude) {
         this.id = id;
         this.latitude = latitude;
         this.longtitude = longtitude;
-        //this.time = time;
     }
 
     public String getId() {
@@ -42,11 +39,16 @@ public class RoutePoint {
         this.longtitude = longtitude;
     }
 
-    /*public String getTime() {
-        return time;
+    @Override
+    public boolean equals(Object o) {
+        RoutePoint point = (RoutePoint) o;
+        return id.equals(point.getId()) &&
+                latitude.equals(point.getLatitude()) &&
+                longtitude.equals(point.getLongtitude());
     }
 
-    public void setTime(String time) {
-        this.time = time;
-    }*/
+    @Override
+    public String toString() {
+        return id + ": " + latitude + ", " + longtitude;
+    }
 }

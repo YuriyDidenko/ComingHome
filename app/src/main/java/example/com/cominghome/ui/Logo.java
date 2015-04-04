@@ -12,16 +12,24 @@ import android.widget.ImageView;
 import example.com.cominghome.R;
 import example.com.cominghome.app.App;
 import example.com.cominghome.background.LocationService;
+import example.com.cominghome.data.DBManager;
+import example.com.cominghome.data.RouteTable;
 
 public class Logo extends Activity {
-    private Intent intentService;
+    private RouteTable routeTable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.logo);
-        intentService = new Intent(this, LocationService.class);
-        startService(intentService);
+        Log.d(App.TAG, "Logo: onCreate");
+
+        Intent intentService = new Intent(this, LocationService.class);
+        if (!App.isServiceRunning(this, LocationService.class)) {
+            Log.d(App.TAG, "Logo: Service was inactive, it's running now");
+            startService(intentService);
+        } else
+            Log.d(App.TAG, "Logo: Service is enabled");
 
         ImageView imgLogo = (ImageView) findViewById(R.id.img_logo);
         imgLogo.setOnClickListener(new View.OnClickListener() {
@@ -33,18 +41,56 @@ public class Logo extends Activity {
         });
         Animation animation = AnimationUtils.loadAnimation(this, R.anim.logo_anim);
         imgLogo.startAnimation(animation);
+
+        routeTable = DBManager.getHelper().getRouteTable();
+
+//        SharedPreferences prefs = getSharedPreferences("prefs", MODE_PRIVATE);
+//        SharedPreferences.Editor editor = prefs.edit();
+//        editor.remove("1 enabled");
+//        editor.remove("2 enabled");
+//        editor.clear();
+//        editor.commit();
+
+        //routeTable.deleteRoute();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        Log.d(App.TAG, "Logo: onStop");
-        //stopService(intentService);
     }
 
     @Override
     protected void onDestroy() {
+        Log.d(App.TAG, "Logo: onDestroy");
         super.onDestroy();
-        stopService(intentService);
+    }
+
+    @Override
+    protected void onStart() {
+        //Log.d(App.TAG, "Logo b_start getMe ="+ App.getMe());
+        super.onStart();
+//        Log.d(App.TAG, "Logo a_start getMe ="+ App.getMe());
+    }
+
+    @Override
+    protected void onRestart() {
+//        Log.d(App.TAG, "Logo b_restart getMe ="+ App.getMe());
+        super.onRestart();
+//        Log.d(App.TAG, "Logo a_restart getMe ="+ App.getMe());
+    }
+
+    @Override
+    protected void onResume() {
+//        Log.d(App.TAG, "Logo b_resume getMe ="+ App.getMe());
+        super.onResume();
+//        Log.d(App.TAG, "Logo a_resume getMe ="+ App.getMe());
+        Log.d(App.TAG, routeTable.getFullRoute().toString());
+    }
+
+    @Override
+    protected void onPause() {
+//        Log.d(App.TAG, "Logo b_pause getMe ="+ App.getMe());
+        super.onPause();
+//        Log.d(App.TAG, "Logo a_pause getMe ="+ App.getMe());
     }
 }

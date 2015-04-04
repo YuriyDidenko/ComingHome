@@ -3,7 +3,10 @@ package example.com.cominghome.data;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.location.Location;
 import android.util.Log;
+
+import com.google.android.gms.maps.model.LatLng;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +27,6 @@ public class RouteTable {
                 RoutePoint.FIELD_ID + " text, " +
                 RoutePoint.FIELD_LATITUDE + " text, " +
                 RoutePoint.FIELD_LONGTITUDE + " text);";
-        //RoutePoint.FIELD_TIME + " text);";
         db.execSQL(sql);
     }
 
@@ -39,8 +41,9 @@ public class RouteTable {
         cv.put(RoutePoint.FIELD_ID, point.getId());
         cv.put(RoutePoint.FIELD_LATITUDE, point.getLatitude());
         cv.put(RoutePoint.FIELD_LONGTITUDE, point.getLongtitude());
-        //cv.put(RoutePoint.FIELD_TIME, point.getTime());
         mDatabase.insert(TABLE_NAME, null, cv);
+
+        Log.d(App.TAG, "added new point to db");
 
         return true;
     }
@@ -56,13 +59,11 @@ public class RouteTable {
             int indexId = c.getColumnIndex(RoutePoint.FIELD_ID);
             int indexLatitude = c.getColumnIndex(RoutePoint.FIELD_LATITUDE);
             int indexLongitude = c.getColumnIndex(RoutePoint.FIELD_LONGTITUDE);
-            //int indexTime = c.getColumnIndex(RoutePoint.FIELD_TIME);
             do {
                 String id = c.getString(indexId);
                 String latitude = c.getString(indexLatitude);
                 String longitude = c.getString(indexLongitude);
-                //String time = c.getString(indexTime);
-                RoutePoint point = new RoutePoint(id, latitude, longitude/*, time*/);
+                RoutePoint point = new RoutePoint(id, latitude, longitude);
                 list.add(point);
             }
             while (c.moveToNext());
@@ -82,17 +83,62 @@ public class RouteTable {
             int indexId = c.getColumnIndex(RoutePoint.FIELD_ID);
             int indexLatitude = c.getColumnIndex(RoutePoint.FIELD_LATITUDE);
             int indexLongitude = c.getColumnIndex(RoutePoint.FIELD_LONGTITUDE);
-            //int indexTime = c.getColumnIndex(RoutePoint.FIELD_TIME);
 
             String id = c.getString(indexId);
             String latitude = c.getString(indexLatitude);
             String longitude = c.getString(indexLongitude);
-            //String time = c.getString(indexTime);
 
-            point = new RoutePoint(id, latitude, longitude/*, time*/);
+            point = new RoutePoint(id, latitude, longitude);
         } else Log.d(App.TAG, "cannot find the last location from table");
         c.close();
 
         return point;
+    }
+
+    public RoutePoint getFirstLocation() {
+        RoutePoint point = null;
+        Cursor c = mDatabase.rawQuery("select * from " + TABLE_NAME +
+                " order by " + RoutePoint.FIELD_ID + " asc " +
+                "limit 1", null);
+        if (c.moveToFirst()) {
+            int indexId = c.getColumnIndex(RoutePoint.FIELD_ID);
+            int indexLatitude = c.getColumnIndex(RoutePoint.FIELD_LATITUDE);
+            int indexLongitude = c.getColumnIndex(RoutePoint.FIELD_LONGTITUDE);
+
+            String id = c.getString(indexId);
+            String latitude = c.getString(indexLatitude);
+            String longitude = c.getString(indexLongitude);
+
+            point = new RoutePoint(id, latitude, longitude);
+        } else Log.d(App.TAG, "cannot find the first location from table");
+        c.close();
+
+        return point;
+    }
+
+    public boolean contains(RoutePoint point) {
+        return getFullRoute().contains(point);
+    }
+
+    public boolean contains(Location location) {
+        for (RoutePoint p : getFullRoute())
+            if (location.getLatitude() == Double.parseDouble(p.getLatitude())
+                    && location.getLongitude() == Double.parseDouble(p.getLongtitude()))
+                return true;
+        return false;
+    }
+
+    public boolean contains(LatLng latLng) {
+        for (RoutePoint p : getFullRoute())
+            if (latLng.latitude == Double.parseDouble(p.getLatitude())
+                    && latLng.longitude == Double.parseDouble(p.getLongtitude()))
+                return true;
+        return false;
+    }
+
+    @Override
+    public String toString() {
+        Log.d(App.TAG, "RouteTable.toString(): override me!");
+        return null;
     }
 }
