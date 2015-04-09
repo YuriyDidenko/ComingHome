@@ -19,10 +19,13 @@ public class LocationService extends Service {
 
     public static final String ACTION_START_RECORD = "ACTION_START_RECORD";
     public static final String ACTION_STOP_RECORD = "ACTION_STOP_RECORD";
+    public static final String ACTION_SEND_FIRST_POINT = "ACTION_SEND_FIRST_POINT";
+    public static final String EXTRA_FIRST_POINT = "EXTRA_FIRST_POINT";
 
     private static boolean isRecordingMode = false;
+    private boolean isFirstPoint;
 
-    private Location lastLoc, newLoc;
+    private Location lastLoc;
     private LocationManager manager;
     private LocationListener listener;
 
@@ -59,33 +62,31 @@ public class LocationService extends Service {
         if (intent.getAction() != null) {
             switch (intent.getAction()) {
                 case ACTION_START_RECORD:
-                    isRecordingMode = true;
+                    startRecord();
                     break;
                 case ACTION_STOP_RECORD:
                 default:
-                    isRecordingMode = false;
+                    stopRecord();
             }
-            startListener();
         }
         return START_NOT_STICKY;
     }
 
-    private void startListener() {
-        // if last == new
-        if (lastLoc != null && lastLoc.getLatitude() == newLoc.getLatitude() && lastLoc.getLongitude() == newLoc.getLongitude()) {
-            if (isRecordingMode)
-                if (!routeTable.contains(newLoc)) {
-                    routeTable.addRoutePoint(new RoutePoint(++pointNumber + "", newLoc.getLatitude() + "", newLoc.getLongitude() + ""));
-                    //return;
-                } else if (routeTable.contains(newLoc))
-                    return;
-        }
+    public void startRecord() {
+        if (lastLoc != null) {
+            sendBroadcast(new Intent(ACTION_SEND_FIRST_POINT).putExtra(EXTRA_FIRST_POINT, lastLoc));
+            savePoint(lastLoc);
+        } else isFirstPoint = true;
+        isRecordingMode = true;
+    }
 
-        if (lastLoc == null || !routeTable.contains(newLoc)) {
-            if (isRecordingMode)
-                routeTable.addRoutePoint(new RoutePoint(++pointNumber + "", newLoc.getLatitude() + "", newLoc.getLongitude() + ""));
-        }
-        lastLoc = newLoc;
+    public void stopRecord() {
+        isRecordingMode = false;
+    }
+
+    private void savePoint(Location loc) {
+        if (!routeTable.contains(loc))
+            routeTable.addRoutePoint(new RoutePoint(++pointNumber + "", loc.getLatitude() + "", loc.getLongitude() + ""));
     }
 
     @Override
@@ -96,7 +97,7 @@ public class LocationService extends Service {
     private class LocalLocationListener implements LocationListener {
         @Override
         public void onLocationChanged(Location loc) {
-            if (newLoc != null && newLoc.getLatitude() == loc.getLatitude() && newLoc.getLongitude() == loc.getLongitude())
+            if (lastLoc != null && lastLoc.getLatitude() == loc.getLatitude() && lastLoc.getLongitude() == loc.getLongitude())
                 return;
 
             Log.d(App.TAG, "Location has been updated");
@@ -105,8 +106,16 @@ public class LocationService extends Service {
                     (App.getApp(LocationService.this).getMe().getLatitude() != loc.getLatitude()) &&
                             App.getApp(LocationService.this).getMe().getLongitude() != loc.getLongitude())
                 App.getApp(LocationService.this).setMe(loc);
-            newLoc = loc;
-            startListener();
+
+
+            if (isRecordingMode) {
+                savePoint(loc);
+                if (isFirstPoint) {
+                    sendBroadcast(new Intent(ACTION_SEND_FIRST_POINT).putExtra(EXTRA_FIRST_POINT, loc));
+                    isFirstPoint = false;
+                }
+            }
+            lastLoc = loc;
         }
 
         @Override

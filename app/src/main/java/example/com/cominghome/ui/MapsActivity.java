@@ -1,14 +1,18 @@
 package example.com.cominghome.ui;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -28,8 +32,6 @@ import example.com.cominghome.data.RouteTable;
 
 public class MapsActivity extends FragmentActivity {
 
-    public static boolean isActivated;
-
     private GoogleMap mMap;
     private Button btnGo;
     private Button btnGoHome;
@@ -37,11 +39,16 @@ public class MapsActivity extends FragmentActivity {
     private Marker beginLocation, endLocation;
 
     private RouteTable routeTable;
+    private LocationReceiver receiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+
+        receiver = new LocationReceiver();
+        registerReceiver(receiver, receiver.getBroadcastFilter());
+
         if (mMap == null)
             mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
 
@@ -84,15 +91,11 @@ public class MapsActivity extends FragmentActivity {
             @Override
             public void onClick(View v) {
                 try {
+                    Log.d(App.TAG, "Go: before startservice");
+
                     startService(new Intent(LocationService.ACTION_START_RECORD));
 
-                    beginLocation = mMap.addMarker(new MarkerOptions()
-                            .position(new LatLng(
-                                    Double.parseDouble(routeTable.getFirstLocation().getLatitude()),
-                                    Double.parseDouble(routeTable.getFirstLocation().getLongtitude())))
-                            .title("start")
-                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
-                    btnGo.setEnabled(false);
+                    Log.d(App.TAG, "Go: after startservice");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -127,11 +130,14 @@ public class MapsActivity extends FragmentActivity {
                 try {
                     startService(new Intent(LocationService.ACTION_STOP_RECORD));
 
-                    beginLocation.remove();
-                    endLocation.remove();
-
-                    beginLocation = null;
-                    endLocation = null;
+                    if (beginLocation != null) {
+                        beginLocation.remove();
+                        beginLocation = null;
+                    }
+                    if (endLocation != null) {
+                        endLocation.remove();
+                        endLocation = null;
+                    }
 
                     routeTable.deleteRoute();
 
@@ -146,6 +152,7 @@ public class MapsActivity extends FragmentActivity {
         //endregion
     }
 
+    //region shared_prefs
     private void saveMapState() {
         SharedPreferences prefs = getSharedPreferences("prefs", MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
@@ -182,8 +189,19 @@ public class MapsActivity extends FragmentActivity {
         //Log.d(App.TAG, "data was loaded: 1 enabled - " + isGoEnabled + ", 2 enabled - " + isGoHomeEnabled);
     }
 
+    private void removeSharedPreferences() {
+        SharedPreferences prefs = getSharedPreferences("prefs", MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.remove("1 enabled");
+        editor.remove("2 enabled");
+        editor.clear();
+        editor.commit();
+    }
+    //endregion
+
     @Override
     protected void onDestroy() {
+        unregisterReceiver(receiver);
         super.onDestroy();
     }
 
@@ -202,13 +220,32 @@ public class MapsActivity extends FragmentActivity {
     protected void onStart() {
         super.onStart();
         loadMapState();
-        isActivated = true;
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        isActivated = false;
         saveMapState();
+    }
+
+    private class LocationReceiver extends BroadcastReceiver {
+
+        public IntentFilter getBroadcastFilter() {
+            return new IntentFilter(LocationService.ACTION_SEND_FIRST_POINT);
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (LocationService.ACTION_SEND_FIRST_POINT.equals(intent.getAction())) {
+
+                Location firstLoc = intent.getParcelableExtra(LocationService.EXTRA_FIRST_POINT);
+
+                beginLocation = mMap.addMarker(new MarkerOptions()
+                        .position(new LatLng(firstLoc.getLatitude(), firstLoc.getLongitude()))
+                        .title("start")
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+                btnGo.setEnabled(false);
+            }
+        }
     }
 }

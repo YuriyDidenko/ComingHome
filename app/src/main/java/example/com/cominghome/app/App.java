@@ -70,9 +70,9 @@ public class App extends Application {
     }
 
     public static App getApp(Context ctx) {
-        if (ctx instanceof App)
+        if (ctx instanceof App) {
             return (App) ctx;
-
+        }
         return (App) ctx.getApplicationContext();
     }
 }
