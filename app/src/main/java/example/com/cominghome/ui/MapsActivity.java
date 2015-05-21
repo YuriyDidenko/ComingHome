@@ -12,11 +12,11 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
@@ -30,22 +30,30 @@ import example.com.cominghome.background.LocationService;
 import example.com.cominghome.data.DBManager;
 import example.com.cominghome.data.RouteTable;
 
+import static example.com.cominghome.utils.Utils.BTN_GO_HOME_STATE_KEY;
+import static example.com.cominghome.utils.Utils.BTN_GO_STATE_KEY;
+import static example.com.cominghome.utils.Utils.SHARED_PREFERENCES_NAME;
+import static example.com.cominghome.utils.Utils.ZOOM_KEY;
+
 public class MapsActivity extends FragmentActivity {
 
     private GoogleMap mMap;
     private Button btnGo;
     private Button btnGoHome;
 
-    private Marker beginLocation, endLocation;
+    private Marker beginLocation, currentLocation, endLocation;
 
     private RouteTable routeTable;
     private LocationReceiver receiver;
+    private SensorManager manager;
+    private SensorListener listener = new SensorListener();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
+        manager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         receiver = new LocationReceiver();
         registerReceiver(receiver, receiver.getBroadcastFilter());
 
@@ -55,30 +63,47 @@ public class MapsActivity extends FragmentActivity {
         routeTable = DBManager.getHelper().getRouteTable();
 
         setButtons();
-
+        setCurrentLocationMarker();
     }
 
     private void setCurrentLocationMarker() {
-        LatLng latLngCurrent = new LatLng(
-                App.getApp(MapsActivity.this).getMe().getLatitude(),
-                App.getApp(MapsActivity.this).getMe().getLongitude());
-        final Marker currentLocation = mMap.addMarker(new MarkerOptions().position(latLngCurrent)
-                .icon(BitmapDescriptorFactory.fromResource(R.drawable.arrow)));
-        SensorManager mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        mSensorManager.registerListener(
-                new SensorEventListener() {
-                    @Override
-                    public void onSensorChanged(SensorEvent event) {
-                        float orient = event.values[0];
-                        if (currentLocation != null)
-                            currentLocation.setRotation(orient);
-                    }
+        try {
+            LatLng latLngCurrent = new LatLng(
+                    App.getApp(MapsActivity.this).getMe().getLatitude(),
+                    App.getApp(MapsActivity.this).getMe().getLongitude());
 
-                    @Override
-                    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-                    }
-                }, mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
-                SensorManager.SENSOR_DELAY_NORMAL);
+            MarkerOptions options = new MarkerOptions().position(latLngCurrent);
+
+            if (routeTable.getFirstLocation() != null) {
+                options.icon(BitmapDescriptorFactory.fromResource(R.drawable.arrow));
+                manager.registerListener(listener, manager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
+                        SensorManager.SENSOR_DELAY_NORMAL);
+            } else {
+                options.icon(BitmapDescriptorFactory.defaultMarker());
+                manager.unregisterListener(listener);
+            }
+
+            currentLocation = mMap.addMarker(options);
+            currentLocation.setRotation(0);
+
+        } catch (Exception e) {
+            Toast.makeText(App.getApp(MapsActivity.this),
+                    "check your connection or availability of GPS-module", Toast.LENGTH_LONG).show();
+            e.printStackTrace();
+            finish();
+        }
+    }
+
+    private class SensorListener implements SensorEventListener {
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+            if (currentLocation != null)
+                currentLocation.setRotation(event.values[0]);
+        }
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        }
     }
 
     private void setButtons() {
@@ -91,11 +116,12 @@ public class MapsActivity extends FragmentActivity {
             @Override
             public void onClick(View v) {
                 try {
-                    Log.d(App.TAG, "Go: before startservice");
+                    //Log.d(App.TAG, "Go: before startservice");
 
                     startService(new Intent(LocationService.ACTION_START_RECORD));
 
-                    Log.d(App.TAG, "Go: after startservice");
+
+                    //Log.d(App.TAG, "Go: after startservice");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -130,16 +156,10 @@ public class MapsActivity extends FragmentActivity {
                 try {
                     startService(new Intent(LocationService.ACTION_STOP_RECORD));
 
-                    if (beginLocation != null) {
-                        beginLocation.remove();
-                        beginLocation = null;
-                    }
-                    if (endLocation != null) {
-                        endLocation.remove();
-                        endLocation = null;
-                    }
+                    removeSavedData();
 
-                    routeTable.deleteRoute();
+                    // тут на выбор, оставлять или нет маркер, указывающий, где ты был последний раз
+                    setCurrentLocationMarker();
 
                     btnGo.setEnabled(true);
                     btnGoHome.setEnabled(true);
@@ -149,26 +169,37 @@ public class MapsActivity extends FragmentActivity {
                 }
             }
         });
+
+        Button btn = (Button) findViewById(R.id.btn_turn_mode);
+        btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+            }
+        });
+
         //endregion
     }
 
     //region shared_prefs
     private void saveMapState() {
-        SharedPreferences prefs = getSharedPreferences("prefs", MODE_PRIVATE);
+        SharedPreferences prefs = getSharedPreferences(SHARED_PREFERENCES_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
 
-        editor.putBoolean("1 enabled", btnGo.isEnabled());
-        editor.putBoolean("2 enabled", btnGoHome.isEnabled());
-        editor.commit();
+        editor.putBoolean(BTN_GO_STATE_KEY, btnGo.isEnabled());
+        editor.putBoolean(BTN_GO_HOME_STATE_KEY, btnGoHome.isEnabled());
+        editor.putFloat(ZOOM_KEY, mMap.getCameraPosition().zoom);
+        editor.apply();
 
         //Log.d(App.TAG, "data was saved: 1 enabled - " + btnGo.isEnabled() + ", 2 enabled - " + btnGoHome.isEnabled());
     }
 
     private void loadMapState() {
-        SharedPreferences prefs = getSharedPreferences("prefs", MODE_PRIVATE);
+        SharedPreferences prefs = getSharedPreferences(SHARED_PREFERENCES_NAME, MODE_PRIVATE);
+
         boolean isGoEnabled, isGoHomeEnabled;
-        isGoEnabled = prefs.getBoolean("1 enabled", true);
-        isGoHomeEnabled = prefs.getBoolean("2 enabled", true);
+        isGoEnabled = prefs.getBoolean(BTN_GO_STATE_KEY, true);
+        isGoHomeEnabled = prefs.getBoolean(BTN_GO_HOME_STATE_KEY, true);
+        float zoom = prefs.getFloat(ZOOM_KEY, 2.0f);
 
         if (!isGoEnabled) {
             LatLng latlngBegin = new LatLng(
@@ -186,16 +217,38 @@ public class MapsActivity extends FragmentActivity {
             btnGoHome.setEnabled(false);
         }
 
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(
+                        App.getApp(MapsActivity.this).getMe().getLatitude(),
+                        App.getApp(MapsActivity.this).getMe().getLongitude()),
+                zoom));
+
         //Log.d(App.TAG, "data was loaded: 1 enabled - " + isGoEnabled + ", 2 enabled - " + isGoHomeEnabled);
     }
 
-    private void removeSharedPreferences() {
-        SharedPreferences prefs = getSharedPreferences("prefs", MODE_PRIVATE);
+    private void removeSavedData() {
+        SharedPreferences prefs = getSharedPreferences(SHARED_PREFERENCES_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
-        editor.remove("1 enabled");
-        editor.remove("2 enabled");
+        editor.remove(BTN_GO_STATE_KEY);
+        editor.remove(BTN_GO_HOME_STATE_KEY);
+        editor.remove(ZOOM_KEY);
         editor.clear();
-        editor.commit();
+        editor.apply();
+
+        if (beginLocation != null) {
+            beginLocation.remove();
+            beginLocation = null;
+        }
+        if (endLocation != null) {
+            endLocation.remove();
+            endLocation = null;
+        }
+
+        routeTable.deleteRoute();
+
+        if (currentLocation != null) {
+            currentLocation.remove();
+            //currentLocation = null;
+        }
     }
     //endregion
 
@@ -213,7 +266,7 @@ public class MapsActivity extends FragmentActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        setCurrentLocationMarker();
+        //setCurrentLocationMarker();
     }
 
     @Override
@@ -226,6 +279,12 @@ public class MapsActivity extends FragmentActivity {
     protected void onStop() {
         super.onStop();
         saveMapState();
+    }
+
+    @Override
+    public void onBackPressed() {
+        finish();
+        super.onBackPressed();
     }
 
     private class LocationReceiver extends BroadcastReceiver {
@@ -245,6 +304,11 @@ public class MapsActivity extends FragmentActivity {
                         .title("start")
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
                 btnGo.setEnabled(false);
+
+                if (currentLocation != null)
+                    currentLocation.remove();
+                currentLocation = null;
+                setCurrentLocationMarker();
             }
         }
     }

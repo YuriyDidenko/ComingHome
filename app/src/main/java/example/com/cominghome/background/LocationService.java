@@ -55,9 +55,6 @@ public class LocationService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(App.TAG, "Service: onStartCommand");
-//        Log.d(App.TAG, "Intent " + intent.toString());
-//        Log.d(App.TAG, "flags " + flags);
-//        Log.d(App.TAG, "startId " + startId);
 
         if (intent.getAction() != null) {
             switch (intent.getAction()) {

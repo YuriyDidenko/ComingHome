@@ -28,8 +28,12 @@ public class Logo extends Activity {
         if (!App.isServiceRunning(this, LocationService.class)) {
             Log.d(App.TAG, "Logo: Service was inactive, it's running now");
             startService(intentService);
-        } else
+        } else {
             Log.d(App.TAG, "Logo: Service is enabled");
+            Intent intent = new Intent(Logo.this, MapsActivity.class);
+            startActivity(intent);
+            Logo.this.finish();
+        }
 
         ImageView imgLogo = (ImageView) findViewById(R.id.img_logo);
         imgLogo.setOnClickListener(new View.OnClickListener() {
@@ -37,21 +41,15 @@ public class Logo extends Activity {
             public void onClick(View v) {
                 Intent intent = new Intent(Logo.this, MapsActivity.class);
                 startActivity(intent);
+                Logo.this.finish();
             }
         });
+
         Animation animation = AnimationUtils.loadAnimation(this, R.anim.logo_anim);
         imgLogo.startAnimation(animation);
 
         routeTable = DBManager.getHelper().getRouteTable();
 
-//        SharedPreferences prefs = getSharedPreferences("prefs", MODE_PRIVATE);
-//        SharedPreferences.Editor editor = prefs.edit();
-//        editor.remove("1 enabled");
-//        editor.remove("2 enabled");
-//        editor.clear();
-//        editor.commit();
-
-        //routeTable.deleteRoute();
     }
 
     @Override
