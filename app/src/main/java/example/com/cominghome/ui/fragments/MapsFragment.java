@@ -1,4 +1,4 @@
-package example.com.cominghome.ui;
+package example.com.cominghome.ui.fragments;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -11,13 +11,17 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Location;
 import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.Fragment;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
@@ -29,13 +33,14 @@ import example.com.cominghome.app.App;
 import example.com.cominghome.background.LocationService;
 import example.com.cominghome.data.DBManager;
 import example.com.cominghome.data.RouteTable;
+import example.com.cominghome.utils.Utils;
 
 import static example.com.cominghome.utils.Utils.BTN_GO_HOME_STATE_KEY;
 import static example.com.cominghome.utils.Utils.BTN_GO_STATE_KEY;
 import static example.com.cominghome.utils.Utils.SHARED_PREFERENCES_NAME;
 import static example.com.cominghome.utils.Utils.ZOOM_KEY;
 
-public class MapsActivity extends FragmentActivity {
+public class MapsFragment extends Fragment {
 
     private GoogleMap mMap;
     private Button btnGo;
@@ -48,29 +53,39 @@ public class MapsActivity extends FragmentActivity {
     private SensorManager manager;
     private SensorListener listener = new SensorListener();
 
+    public MapsFragment() {
+        Log.d(App.TAG, "new MapsFrament()");
+    }
+
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_maps);
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
-        manager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        View rootView = inflater.inflate(R.layout.fragment_maps, container, false);
+
+        manager = (SensorManager) getActivity().getSystemService(Context.SENSOR_SERVICE);
         receiver = new LocationReceiver();
-        registerReceiver(receiver, receiver.getBroadcastFilter());
+        getActivity().registerReceiver(receiver, receiver.getBroadcastFilter());
 
+        final SupportMapFragment supportMapFragment = ((SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.fragment_map));
         if (mMap == null)
-            mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
+            supportMapFragment.getMapAsync(new OnMapReadyCallBackListener());
+
 
         routeTable = DBManager.getHelper().getRouteTable();
 
-        setButtons();
-        setCurrentLocationMarker();
+        return rootView;
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
     }
 
     private void setCurrentLocationMarker() {
         try {
             LatLng latLngCurrent = new LatLng(
-                    App.getApp(MapsActivity.this).getMe().getLatitude(),
-                    App.getApp(MapsActivity.this).getMe().getLongitude());
+                    App.getApp(getActivity()).getMe().getLatitude(),
+                    App.getApp(getActivity()).getMe().getLongitude());
 
             MarkerOptions options = new MarkerOptions().position(latLngCurrent);
 
@@ -87,10 +102,25 @@ public class MapsActivity extends FragmentActivity {
             currentLocation.setRotation(0);
 
         } catch (Exception e) {
-            Toast.makeText(App.getApp(MapsActivity.this),
+            Toast.makeText(App.getApp(getActivity()),
                     "check your connection or availability of GPS-module", Toast.LENGTH_LONG).show();
             e.printStackTrace();
-            finish();
+//            finish();
+        }
+    }
+
+    private class OnMapReadyCallBackListener implements OnMapReadyCallback {
+        @Override
+        public void onMapReady(GoogleMap googleMap) {
+            mMap = googleMap;
+            setButtons();
+            loadMapState();
+            if (getArguments() != null) {
+                int type = getArguments().getInt(Utils.MAP_TYPE_KEY);
+                mMap.setMapType(type);
+            }
+
+            setCurrentLocationMarker();
         }
     }
 
@@ -107,21 +137,16 @@ public class MapsActivity extends FragmentActivity {
     }
 
     private void setButtons() {
-        btnGo = (Button) findViewById(R.id.btn_go);
-        btnGoHome = (Button) findViewById(R.id.btn_go_home);
-        Button btnReset = (Button) findViewById(R.id.btn_reset);
+        btnGo = (Button) getActivity().findViewById(R.id.btn_go);
+        btnGoHome = (Button) getActivity().findViewById(R.id.btn_go_home);
+        Button btnReset = (Button) getActivity().findViewById(R.id.btn_reset);
 
         //region go
         btnGo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 try {
-                    //Log.d(App.TAG, "Go: before startservice");
-
-                    startService(new Intent(LocationService.ACTION_START_RECORD));
-
-
-                    //Log.d(App.TAG, "Go: after startservice");
+                    getActivity().startService(new Intent(LocationService.ACTION_START_RECORD));
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -140,9 +165,9 @@ public class MapsActivity extends FragmentActivity {
                     endLocation = mMap.addMarker(new MarkerOptions().position(latlngLast).title("end"));
                     btnGoHome.setEnabled(false);
 
-                    startService(new Intent(LocationService.ACTION_STOP_RECORD));
+                    getActivity().startService(new Intent(LocationService.ACTION_STOP_RECORD));
                 } catch (Exception e) {
-                    Toast.makeText(getApplicationContext(), e.toString(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getActivity(), e.toString(), Toast.LENGTH_SHORT).show();
                     e.printStackTrace();
                 }
             }
@@ -154,7 +179,7 @@ public class MapsActivity extends FragmentActivity {
             @Override
             public void onClick(View v) {
                 try {
-                    startService(new Intent(LocationService.ACTION_STOP_RECORD));
+                    getActivity().startService(new Intent(LocationService.ACTION_STOP_RECORD));
 
                     removeSavedData();
 
@@ -164,13 +189,13 @@ public class MapsActivity extends FragmentActivity {
                     btnGo.setEnabled(true);
                     btnGoHome.setEnabled(true);
                 } catch (Exception e) {
-                    Toast.makeText(getApplicationContext(), e.toString(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getActivity(), e.toString(), Toast.LENGTH_SHORT).show();
                     e.printStackTrace();
                 }
             }
         });
 
-        Button btn = (Button) findViewById(R.id.btn_turn_mode);
+        Button btn = (Button) getActivity().findViewById(R.id.btn_turn_mode);
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -182,7 +207,7 @@ public class MapsActivity extends FragmentActivity {
 
     //region shared_prefs
     private void saveMapState() {
-        SharedPreferences prefs = getSharedPreferences(SHARED_PREFERENCES_NAME, MODE_PRIVATE);
+        SharedPreferences prefs = getActivity().getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
 
         editor.putBoolean(BTN_GO_STATE_KEY, btnGo.isEnabled());
@@ -194,7 +219,7 @@ public class MapsActivity extends FragmentActivity {
     }
 
     private void loadMapState() {
-        SharedPreferences prefs = getSharedPreferences(SHARED_PREFERENCES_NAME, MODE_PRIVATE);
+        SharedPreferences prefs = getActivity().getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
 
         boolean isGoEnabled, isGoHomeEnabled;
         isGoEnabled = prefs.getBoolean(BTN_GO_STATE_KEY, true);
@@ -216,17 +241,16 @@ public class MapsActivity extends FragmentActivity {
             endLocation = mMap.addMarker(new MarkerOptions().position(latlngEnd).title("end"));
             btnGoHome.setEnabled(false);
         }
-
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(
-                        App.getApp(MapsActivity.this).getMe().getLatitude(),
-                        App.getApp(MapsActivity.this).getMe().getLongitude()),
+                        App.getApp(getActivity()).getMe().getLatitude(),
+                        App.getApp(getActivity()).getMe().getLongitude()),
                 zoom));
 
         //Log.d(App.TAG, "data was loaded: 1 enabled - " + isGoEnabled + ", 2 enabled - " + isGoHomeEnabled);
     }
 
     private void removeSavedData() {
-        SharedPreferences prefs = getSharedPreferences(SHARED_PREFERENCES_NAME, MODE_PRIVATE);
+        SharedPreferences prefs = getActivity().getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
         editor.remove(BTN_GO_STATE_KEY);
         editor.remove(BTN_GO_HOME_STATE_KEY);
@@ -253,38 +277,32 @@ public class MapsActivity extends FragmentActivity {
     //endregion
 
     @Override
-    protected void onDestroy() {
-        unregisterReceiver(receiver);
+    public void onDestroy() {
+        getActivity().unregisterReceiver(receiver);
         super.onDestroy();
     }
 
     @Override
-    protected void onPause() {
+    public void onPause() {
         super.onPause();
     }
 
     @Override
-    protected void onResume() {
+    public void onResume() {
         super.onResume();
-        //setCurrentLocationMarker();
+        setCurrentLocationMarker();
     }
 
     @Override
-    protected void onStart() {
+    public void onStart() {
         super.onStart();
-        loadMapState();
+//        loadMapState();
     }
 
     @Override
-    protected void onStop() {
+    public void onStop() {
         super.onStop();
         saveMapState();
-    }
-
-    @Override
-    public void onBackPressed() {
-        finish();
-        super.onBackPressed();
     }
 
     private class LocationReceiver extends BroadcastReceiver {

@@ -30,7 +30,7 @@ public class Logo extends Activity {
             startService(intentService);
         } else {
             Log.d(App.TAG, "Logo: Service is enabled");
-            Intent intent = new Intent(Logo.this, MapsActivity.class);
+            Intent intent = new Intent(Logo.this, MainActivity.class);
             startActivity(intent);
             Logo.this.finish();
         }
@@ -39,7 +39,7 @@ public class Logo extends Activity {
         imgLogo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(Logo.this, MapsActivity.class);
+                Intent intent = new Intent(Logo.this, MainActivity.class);
                 startActivity(intent);
                 Logo.this.finish();
             }
@@ -65,30 +65,22 @@ public class Logo extends Activity {
 
     @Override
     protected void onStart() {
-        //Log.d(App.TAG, "Logo b_start getMe ="+ App.getMe());
         super.onStart();
-//        Log.d(App.TAG, "Logo a_start getMe ="+ App.getMe());
     }
 
     @Override
     protected void onRestart() {
-//        Log.d(App.TAG, "Logo b_restart getMe ="+ App.getMe());
         super.onRestart();
-//        Log.d(App.TAG, "Logo a_restart getMe ="+ App.getMe());
     }
 
     @Override
     protected void onResume() {
-//        Log.d(App.TAG, "Logo b_resume getMe ="+ App.getMe());
         super.onResume();
-//        Log.d(App.TAG, "Logo a_resume getMe ="+ App.getMe());
         Log.d(App.TAG, routeTable.getFullRoute().toString());
     }
 
     @Override
     protected void onPause() {
-//        Log.d(App.TAG, "Logo b_pause getMe ="+ App.getMe());
         super.onPause();
-//        Log.d(App.TAG, "Logo a_pause getMe ="+ App.getMe());
     }
 }
