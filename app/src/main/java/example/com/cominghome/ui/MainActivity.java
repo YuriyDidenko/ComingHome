@@ -7,10 +7,8 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ListView;
+import android.widget.ExpandableListView;
 
 import com.google.android.gms.maps.GoogleMap;
 
@@ -18,13 +16,20 @@ import example.com.cominghome.R;
 import example.com.cominghome.ui.fragments.AboutFragment;
 import example.com.cominghome.ui.fragments.MapsFragment;
 import example.com.cominghome.ui.fragments.OptionsFragment;
+import example.com.cominghome.utils.DrawerExpItemAdapter;
 import example.com.cominghome.utils.DrawerItem;
-import example.com.cominghome.utils.DrawerItemAdapter;
 import example.com.cominghome.utils.Utils;
+
+import static example.com.cominghome.utils.Utils.GROUP_ABOUT;
+import static example.com.cominghome.utils.Utils.GROUP_MAP;
+import static example.com.cominghome.utils.Utils.GROUP_MAP_VIEW;
+import static example.com.cominghome.utils.Utils.GROUP_OPTIONS;
+import static example.com.cominghome.utils.Utils.GROUP_RESET;
+
 
 public class MainActivity extends FragmentActivity {
     private DrawerLayout mDrawerLayout;
-    private ListView mDrawerList;
+    private ExpandableListView mDrawerExpList;
 
     private Fragment currentFragment;
 
@@ -34,18 +39,18 @@ public class MainActivity extends FragmentActivity {
         setContentView(R.layout.activity_main);
 
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
-        mDrawerList = (ListView) findViewById(R.id.left_drawer);
+        mDrawerExpList = (ExpandableListView) findViewById(R.id.left_drawer);
 
-        DrawerItem[] drawerItem = new DrawerItem[5];
+        DrawerItem[] drawerItems = new DrawerItem[5];
 
-        drawerItem[0] = new DrawerItem(R.drawable.abc_switch_track_mtrl_alpha, "Карта");
-        drawerItem[1] = new DrawerItem(R.drawable.abc_switch_track_mtrl_alpha, "Вид карты");
-        drawerItem[2] = new DrawerItem(R.drawable.abc_switch_track_mtrl_alpha, "Reset");
-        drawerItem[3] = new DrawerItem(R.drawable.abc_switch_track_mtrl_alpha, "Options");
-        drawerItem[4] = new DrawerItem(R.drawable.abc_switch_track_mtrl_alpha, "About");
+        drawerItems[GROUP_MAP] = new DrawerItem(R.drawable.ic_map_white_18dp, "Карта");
+        drawerItems[GROUP_MAP_VIEW] = new DrawerItem(R.drawable.ic_more_vert_white_18dp, "Вид карты");
+        drawerItems[GROUP_RESET] = new DrawerItem(R.drawable.ic_autorenew_white_18dp, "Reset");
+        drawerItems[GROUP_OPTIONS] = new DrawerItem(R.drawable.ic_settings_white_18dp, "Options");
+        drawerItems[GROUP_ABOUT] = new DrawerItem(R.drawable.ic_info_white_18dp, "About");
 
-        DrawerItemAdapter adapter = new DrawerItemAdapter(this, R.layout.drawer_item_row, drawerItem);
-        mDrawerList.setAdapter(adapter);
+        DrawerExpItemAdapter adapter = new DrawerExpItemAdapter(this, drawerItems);
+        mDrawerExpList.setAdapter(adapter);
 
         ActionBarDrawerToggle mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, new Toolbar(this),
                 R.string.drawer_open, R.string.drawer_close) {
@@ -58,65 +63,91 @@ public class MainActivity extends FragmentActivity {
             }
         };
         mDrawerLayout.setDrawerListener(mDrawerToggle);
-        mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
+
+        mDrawerExpList.setOnGroupClickListener(new DrawerGroupClickListener());
+        mDrawerExpList.setOnChildClickListener(new DrawerChildClickListener());
 
         currentFragment = new MapsFragment();
         FragmentManager fragmentManager = getSupportFragmentManager();
         fragmentManager.beginTransaction().replace(R.id.content_frame, currentFragment).commit();
     }
 
-    private class DrawerItemClickListener implements ListView.OnItemClickListener {
-        @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            selectItem(position);
-        }
 
+    private class DrawerGroupClickListener implements ExpandableListView.OnGroupClickListener {
+        @Override
+        public boolean onGroupClick(ExpandableListView parent, View v, int groupPosition, long id) {
+            switch (groupPosition) {
+                case GROUP_MAP:
+                    if (!(currentFragment instanceof MapsFragment))
+                        currentFragment = new MapsFragment();
+                    break;
+                case GROUP_MAP_VIEW:
+                    currentFragment = null;
+//                    drawerItems[GROUP_MAP_VIEW].setIcon(android.R.drawable.arrow_up_float);
+                    break;
+                case GROUP_RESET:
+                    // хуй его знает
+                    currentFragment = null;
+                    break;
+                case GROUP_OPTIONS:
+                    currentFragment = new OptionsFragment();
+                    break;
+                case GROUP_ABOUT:
+                    currentFragment = new AboutFragment();
+                    break;
+            }
+
+            if (currentFragment != null) {
+                FragmentManager fragmentManager = getSupportFragmentManager();
+                fragmentManager.beginTransaction().replace(R.id.content_frame, currentFragment).commit();
+
+                mDrawerExpList.setItemChecked(groupPosition, true);
+                mDrawerExpList.setSelection(groupPosition);
+                if (groupPosition != 1)
+                    mDrawerLayout.closeDrawer(mDrawerExpList);
+
+            }
+            return false;
+        }
     }
 
-    private void selectItem(int position) {
+    private class DrawerChildClickListener implements ExpandableListView.OnChildClickListener {
+        @Override
+        public boolean onChildClick(ExpandableListView parent, View v, int groupPosition, int childPosition, long id) {
+            Bundle bundle = new Bundle();
 
-        switch (position) {
-            // map
-            case 0:
-                if (!(currentFragment instanceof MapsFragment))
-                    currentFragment = new MapsFragment();
-                break;
-            // map view
-            case 1:
-                // тоже что и пред., но передавать в бандл например тип карты
-                Bundle bundle = new Bundle();
-                bundle.putInt(Utils.MAP_TYPE_KEY, GoogleMap.MAP_TYPE_HYBRID);
+
+            //if (groupPosition == MAP_TYPE_CHOICE)
+            // ибо Normal уже = 1, а child минимальный = 0
+            switch (childPosition + 1) {
+                case GoogleMap.MAP_TYPE_NORMAL:
+                    bundle.putInt(Utils.MAP_TYPE_KEY, GoogleMap.MAP_TYPE_NORMAL);
+                    break;
+                case GoogleMap.MAP_TYPE_SATELLITE:
+                    bundle.putInt(Utils.MAP_TYPE_KEY, GoogleMap.MAP_TYPE_SATELLITE);
+                    break;
+                case GoogleMap.MAP_TYPE_TERRAIN:
+                    bundle.putInt(Utils.MAP_TYPE_KEY, GoogleMap.MAP_TYPE_TERRAIN);
+                    break;
+                case GoogleMap.MAP_TYPE_HYBRID:
+                    bundle.putInt(Utils.MAP_TYPE_KEY, GoogleMap.MAP_TYPE_HYBRID);
+                    break;
+                default:
+                    bundle.putInt(Utils.MAP_TYPE_KEY, -1);
+                    break;
+            }
+            if (bundle.getInt(Utils.MAP_TYPE_KEY) != -1) {
                 currentFragment = new MapsFragment();
                 currentFragment.setArguments(bundle);
-                break;
-            // reset
-            case 2:
-                // хуй его знает
-                currentFragment = null;
-                break;
-            // options
-            case 3:
-                // продумать options
-                currentFragment = new OptionsFragment();
-                break;
-            // about
-            case 4:
-                currentFragment = new AboutFragment();
-                break;
-            default:
-                break;
-        }
 
-        if (currentFragment != null) {
-            FragmentManager fragmentManager = getSupportFragmentManager();
-            fragmentManager.beginTransaction().replace(R.id.content_frame, currentFragment).commit();
+                FragmentManager fragmentManager = getSupportFragmentManager();
+                fragmentManager.beginTransaction().replace(R.id.content_frame, currentFragment).commit();
+            }
+            //mDrawerExpList.setItemChecked(childPosition, true);
+            //mDrawerExpList.setSelection(childPosition);
+            mDrawerLayout.closeDrawer(mDrawerExpList);
 
-            mDrawerList.setItemChecked(position, true);
-            mDrawerList.setSelection(position);
-            mDrawerLayout.closeDrawer(mDrawerList);
-
-        } else {
-            Log.e("MainActivity", "Error in creating fragment");
+            return false;
         }
     }
 }

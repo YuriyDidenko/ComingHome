@@ -11,7 +11,21 @@ public class DrawerItem {
     public DrawerItem(int icon, String name) {
         this.icon = icon;
         this.name = name;
+    }
 
+    public void setIcon(int icon) {
+        this.icon = icon;
+    }
 
+    public int getIcon() {
+        return icon;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }

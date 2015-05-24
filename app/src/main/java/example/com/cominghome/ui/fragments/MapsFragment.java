@@ -105,7 +105,6 @@ public class MapsFragment extends Fragment {
             Toast.makeText(App.getApp(getActivity()),
                     "check your connection or availability of GPS-module", Toast.LENGTH_LONG).show();
             e.printStackTrace();
-//            finish();
         }
     }
 
@@ -115,9 +114,11 @@ public class MapsFragment extends Fragment {
             mMap = googleMap;
             setButtons();
             loadMapState();
+
             if (getArguments() != null) {
                 int type = getArguments().getInt(Utils.MAP_TYPE_KEY);
-                mMap.setMapType(type);
+                if (mMap.getMapType() != type)
+                    mMap.setMapType(type);
             }
 
             setCurrentLocationMarker();
@@ -184,7 +185,7 @@ public class MapsFragment extends Fragment {
                     removeSavedData();
 
                     // тут на выбор, оставлять или нет маркер, указывающий, где ты был последний раз
-                    setCurrentLocationMarker();
+                    //setCurrentLocationMarker();
 
                     btnGo.setEnabled(true);
                     btnGoHome.setEnabled(true);
@@ -271,7 +272,7 @@ public class MapsFragment extends Fragment {
 
         if (currentLocation != null) {
             currentLocation.remove();
-            //currentLocation = null;
+//            currentLocation = null;
         }
     }
     //endregion
@@ -280,11 +281,6 @@ public class MapsFragment extends Fragment {
     public void onDestroy() {
         getActivity().unregisterReceiver(receiver);
         super.onDestroy();
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
     }
 
     @Override
