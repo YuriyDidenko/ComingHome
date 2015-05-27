@@ -1,7 +1,10 @@
 package example.com.cominghome.background;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.hardware.GeomagneticField;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -14,6 +17,9 @@ import example.com.cominghome.data.DBHelper;
 import example.com.cominghome.data.DBManager;
 import example.com.cominghome.data.RoutePoint;
 import example.com.cominghome.data.RouteTable;
+
+import static example.com.cominghome.utils.Utils.SHARED_PREFERENCES_NAME;
+import static example.com.cominghome.utils.Utils.TURNING_MODE_KEY;
 
 public class LocationService extends Service {
 
@@ -28,6 +34,8 @@ public class LocationService extends Service {
     private Location lastLoc;
     private LocationManager manager;
     private LocationListener listener;
+
+    private static float declination;
 
     private RouteTable routeTable;
     private int pointNumber = 0;
@@ -81,6 +89,10 @@ public class LocationService extends Service {
         isRecordingMode = false;
     }
 
+    public static boolean isRecordingMode() {
+        return isRecordingMode;
+    }
+
     private void savePoint(Location loc) {
         if (!routeTable.contains(loc))
             routeTable.addRoutePoint(new RoutePoint(++pointNumber + "", loc.getLatitude() + "", loc.getLongitude() + ""));
@@ -113,6 +125,21 @@ public class LocationService extends Service {
                 }
             }
             lastLoc = loc;
+
+            // for map rotation
+            SharedPreferences prefs = getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
+            if (prefs.getBoolean(TURNING_MODE_KEY, false))
+            {
+                GeomagneticField field = new GeomagneticField(
+                        (float)loc.getLatitude(),
+                        (float)loc.getLongitude(),
+                        (float)loc.getAltitude(),
+                        System.currentTimeMillis()
+                );
+
+                // getDeclination returns degrees
+                declination = field.getDeclination();
+            }
         }
 
         @Override
@@ -126,5 +153,9 @@ public class LocationService extends Service {
         @Override
         public void onProviderDisabled(String provider) {
         }
+    }
+
+    public static float getDeclination() {
+        return declination;
     }
 }

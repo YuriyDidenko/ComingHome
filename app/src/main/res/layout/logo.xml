@@ -8,6 +8,6 @@
         android:layout_height="match_parent"
         android:id="@+id/img_logo"
         android:layout_gravity="center"
-        android:src="@drawable/find_path"
+        android:src="@drawable/find_path_vert"
         android:background="@android:color/black" />
 </FrameLayout>

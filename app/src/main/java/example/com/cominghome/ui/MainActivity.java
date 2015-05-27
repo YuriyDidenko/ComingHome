@@ -1,5 +1,8 @@
 package example.com.cominghome.ui;
 
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
@@ -9,11 +12,15 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.ExpandableListView;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.GoogleMap;
 
 import example.com.cominghome.R;
+import example.com.cominghome.app.App;
+import example.com.cominghome.background.LocationService;
 import example.com.cominghome.ui.fragments.AboutFragment;
+import example.com.cominghome.ui.fragments.AskDialogFragment;
 import example.com.cominghome.ui.fragments.MapsFragment;
 import example.com.cominghome.ui.fragments.OptionsFragment;
 import example.com.cominghome.utils.DrawerExpItemAdapter;
@@ -25,6 +32,11 @@ import static example.com.cominghome.utils.Utils.GROUP_MAP;
 import static example.com.cominghome.utils.Utils.GROUP_MAP_VIEW;
 import static example.com.cominghome.utils.Utils.GROUP_OPTIONS;
 import static example.com.cominghome.utils.Utils.GROUP_RESET;
+import static example.com.cominghome.utils.Utils.SHARED_PREFERENCES_NAME;
+import static example.com.cominghome.utils.Utils.TRACK_MODE_ASK;
+import static example.com.cominghome.utils.Utils.TRACK_MODE_KEY;
+import static example.com.cominghome.utils.Utils.TRACK_MODE_OFF;
+import static example.com.cominghome.utils.Utils.TRACK_MODE_ON;
 
 
 public class MainActivity extends FragmentActivity {
@@ -32,6 +44,7 @@ public class MainActivity extends FragmentActivity {
     private ExpandableListView mDrawerExpList;
 
     private Fragment currentFragment;
+    private Bundle bundleFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,9 +80,11 @@ public class MainActivity extends FragmentActivity {
         mDrawerExpList.setOnGroupClickListener(new DrawerGroupClickListener());
         mDrawerExpList.setOnChildClickListener(new DrawerChildClickListener());
 
+        bundleFragment = new Bundle();
         currentFragment = new MapsFragment();
         FragmentManager fragmentManager = getSupportFragmentManager();
         fragmentManager.beginTransaction().replace(R.id.content_frame, currentFragment).commit();
+
     }
 
 
@@ -86,7 +101,7 @@ public class MainActivity extends FragmentActivity {
 //                    drawerItems[GROUP_MAP_VIEW].setIcon(android.R.drawable.arrow_up_float);
                     break;
                 case GROUP_RESET:
-                    // хуй его знает
+                    //
                     currentFragment = null;
                     break;
                 case GROUP_OPTIONS:
@@ -98,14 +113,14 @@ public class MainActivity extends FragmentActivity {
             }
 
             if (currentFragment != null) {
+
                 FragmentManager fragmentManager = getSupportFragmentManager();
                 fragmentManager.beginTransaction().replace(R.id.content_frame, currentFragment).commit();
 
                 mDrawerExpList.setItemChecked(groupPosition, true);
                 mDrawerExpList.setSelection(groupPosition);
-                if (groupPosition != 1)
+                if (groupPosition != GROUP_MAP_VIEW)
                     mDrawerLayout.closeDrawer(mDrawerExpList);
-
             }
             return false;
         }
@@ -114,31 +129,30 @@ public class MainActivity extends FragmentActivity {
     private class DrawerChildClickListener implements ExpandableListView.OnChildClickListener {
         @Override
         public boolean onChildClick(ExpandableListView parent, View v, int groupPosition, int childPosition, long id) {
-            Bundle bundle = new Bundle();
 
 
             //if (groupPosition == MAP_TYPE_CHOICE)
             // ибо Normal уже = 1, а child минимальный = 0
             switch (childPosition + 1) {
                 case GoogleMap.MAP_TYPE_NORMAL:
-                    bundle.putInt(Utils.MAP_TYPE_KEY, GoogleMap.MAP_TYPE_NORMAL);
+                    bundleFragment.putInt(Utils.MAP_TYPE_KEY, GoogleMap.MAP_TYPE_NORMAL);
                     break;
                 case GoogleMap.MAP_TYPE_SATELLITE:
-                    bundle.putInt(Utils.MAP_TYPE_KEY, GoogleMap.MAP_TYPE_SATELLITE);
+                    bundleFragment.putInt(Utils.MAP_TYPE_KEY, GoogleMap.MAP_TYPE_SATELLITE);
                     break;
                 case GoogleMap.MAP_TYPE_TERRAIN:
-                    bundle.putInt(Utils.MAP_TYPE_KEY, GoogleMap.MAP_TYPE_TERRAIN);
+                    bundleFragment.putInt(Utils.MAP_TYPE_KEY, GoogleMap.MAP_TYPE_TERRAIN);
                     break;
                 case GoogleMap.MAP_TYPE_HYBRID:
-                    bundle.putInt(Utils.MAP_TYPE_KEY, GoogleMap.MAP_TYPE_HYBRID);
+                    bundleFragment.putInt(Utils.MAP_TYPE_KEY, GoogleMap.MAP_TYPE_HYBRID);
                     break;
                 default:
-                    bundle.putInt(Utils.MAP_TYPE_KEY, -1);
+                    bundleFragment.putInt(Utils.MAP_TYPE_KEY, -1);
                     break;
             }
-            if (bundle.getInt(Utils.MAP_TYPE_KEY) != -1) {
+            if (bundleFragment.getInt(Utils.MAP_TYPE_KEY) != -1) {
                 currentFragment = new MapsFragment();
-                currentFragment.setArguments(bundle);
+                currentFragment.setArguments(bundleFragment);
 
                 FragmentManager fragmentManager = getSupportFragmentManager();
                 fragmentManager.beginTransaction().replace(R.id.content_frame, currentFragment).commit();
@@ -148,6 +162,44 @@ public class MainActivity extends FragmentActivity {
             mDrawerLayout.closeDrawer(mDrawerExpList);
 
             return false;
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+    }
+
+    @Override
+    public void onBackPressed() {
+        startDialogIfNeeded();
+    }
+
+    // define if we need to show dialog
+    private void startDialogIfNeeded() {
+        SharedPreferences prefs = getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
+        switch (prefs.getInt(TRACK_MODE_KEY, TRACK_MODE_ON)) {
+            case TRACK_MODE_ON: // запускаем, если не запущено
+                Toast.makeText(this, "track mode on", Toast.LENGTH_SHORT).show();
+                if (!App.isServiceRunning(this, LocationService.class))
+                    startService(new Intent(LocationService.ACTION_START_RECORD));
+                finish();
+                break;
+            case TRACK_MODE_OFF: // останавливаем запись
+                Toast.makeText(this, "track mode off", Toast.LENGTH_SHORT).show();
+                startService(new Intent(LocationService.ACTION_STOP_RECORD));
+                finish();
+                break;
+            case TRACK_MODE_ASK:
+                Toast.makeText(this, "track mode ask", Toast.LENGTH_SHORT).show();
+                AskDialogFragment dialog = new AskDialogFragment();
+                dialog.show(getSupportFragmentManager(), "swaaag taaag");
+                break;
         }
     }
 }

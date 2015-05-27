@@ -24,6 +24,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -53,8 +54,12 @@ public class MapsFragment extends Fragment {
     private SensorManager manager;
     private SensorListener listener = new SensorListener();
 
+    private boolean isTurningMode;
+
     public MapsFragment() {
         Log.d(App.TAG, "new MapsFrament()");
+//        SharedPreferences prefs = getActivity().getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
+//        isTurningMode = prefs.getBoolean(TURNING_MODE_KEY, false);
     }
 
     @Override
@@ -76,12 +81,9 @@ public class MapsFragment extends Fragment {
         return rootView;
     }
 
-    @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-    }
-
     private void setCurrentLocationMarker() {
+        if (!LocationService.isRecordingMode())
+            return;
         try {
             LatLng latLngCurrent = new LatLng(
                     App.getApp(getActivity()).getMe().getLatitude(),
@@ -130,6 +132,27 @@ public class MapsFragment extends Fragment {
         public void onSensorChanged(SensorEvent event) {
             if (currentLocation != null)
                 currentLocation.setRotation(event.values[0]);
+
+            // rotation map
+//           SharedPreferences prefs = getActivity().getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
+//            if (prefs.getBoolean(TURNING_MODE_KEY, false)) {
+//                float[] mRotationMatrix = new float[3];
+//                if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
+//                    SensorManager.getRotationMatrixFromVector(
+//                            mRotationMatrix, event.values);
+//                    float[] orientation = new float[3];
+//                    SensorManager.getOrientation(mRotationMatrix, orientation);
+//                    float bearing = (float) Math.toDegrees(orientation[0]) + LocationService.getDeclination();
+//                    updateCamera(bearing);
+//                }
+//            }
+        }
+
+        private void updateCamera(float bearing) {
+            CameraPosition oldPos = mMap.getCameraPosition();
+
+            CameraPosition pos = CameraPosition.builder(oldPos).bearing(bearing).build();
+            mMap.moveCamera(CameraUpdateFactory.newCameraPosition(pos));
         }
 
         @Override
@@ -256,7 +279,7 @@ public class MapsFragment extends Fragment {
         editor.remove(BTN_GO_STATE_KEY);
         editor.remove(BTN_GO_HOME_STATE_KEY);
         editor.remove(ZOOM_KEY);
-        editor.clear();
+        //editor.clear();
         editor.apply();
 
         if (beginLocation != null) {
