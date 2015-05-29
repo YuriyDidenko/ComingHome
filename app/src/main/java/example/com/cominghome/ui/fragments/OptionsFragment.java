@@ -9,18 +9,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
-import android.widget.RadioButton;
 import android.widget.RadioGroup;
 
 import example.com.cominghome.R;
 
-import static example.com.cominghome.utils.Utils.SHARED_PREFERENCES_NAME;
 import static example.com.cominghome.utils.Utils.TRACK_MODE_ASK;
 import static example.com.cominghome.utils.Utils.TRACK_MODE_KEY;
 import static example.com.cominghome.utils.Utils.TRACK_MODE_OFF;
 import static example.com.cominghome.utils.Utils.TRACK_MODE_ON;
 import static example.com.cominghome.utils.Utils.TRACK_MODE_RADIO_BUTTON_ID_KEY;
 import static example.com.cominghome.utils.Utils.TURNING_MODE_KEY;
+import static example.com.cominghome.utils.Utils.getAppPreferences;
 
 public class OptionsFragment extends Fragment {
 
@@ -33,9 +32,9 @@ public class OptionsFragment extends Fragment {
 
         RadioGroup radioGroup = (RadioGroup) rootView.findViewById(R.id.radio_group);
 
-        RadioButton rbTrack = (RadioButton) rootView.findViewById(R.id.rb_track);
-        RadioButton rbNotTrack = (RadioButton) rootView.findViewById(R.id.rb_not_track);
-        RadioButton rbAskTrack = (RadioButton) rootView.findViewById(R.id.rb_ask_track);
+//        RadioButton rbTrack = (RadioButton) rootView.findViewById(R.id.rb_track);
+//        RadioButton rbNotTrack = (RadioButton) rootView.findViewById(R.id.rb_not_track);
+//        RadioButton rbAskTrack = (RadioButton) rootView.findViewById(R.id.rb_ask_track);
 
         CheckBox chbTurningMode = (CheckBox) rootView.findViewById(R.id.check_box_turning_mode);
 
@@ -77,30 +76,24 @@ public class OptionsFragment extends Fragment {
     }
 
     static void saveOption(Context context, String key, int value) {
-        SharedPreferences prefs = context.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
+        SharedPreferences.Editor editor = getAppPreferences(context).edit();
 
         editor.putInt(key, value);
         editor.apply();
     }
 
     static void saveOption(Context context, String key, boolean value) {
-        SharedPreferences prefs = context.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
+        SharedPreferences.Editor editor = getAppPreferences(context).edit();
 
         editor.putBoolean(key, value);
         editor.apply();
     }
 
     private int getOldSelectedId() {
-        SharedPreferences prefs = getActivity().getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
-
-        return prefs.getInt(TRACK_MODE_RADIO_BUTTON_ID_KEY, R.id.rb_track);
+        return getAppPreferences(getActivity()).getInt(TRACK_MODE_RADIO_BUTTON_ID_KEY, R.id.rb_track);
     }
 
     private boolean getOldTurningMode() {
-        SharedPreferences prefs = getActivity().getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
-
-        return prefs.getBoolean(TURNING_MODE_KEY, false);
+        return getAppPreferences(getActivity()).getBoolean(TURNING_MODE_KEY, false);
     }
 }

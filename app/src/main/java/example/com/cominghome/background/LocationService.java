@@ -1,9 +1,7 @@
 package example.com.cominghome.background;
 
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.hardware.GeomagneticField;
 import android.location.Location;
 import android.location.LocationListener;
@@ -18,8 +16,10 @@ import example.com.cominghome.data.DBManager;
 import example.com.cominghome.data.RoutePoint;
 import example.com.cominghome.data.RouteTable;
 
-import static example.com.cominghome.utils.Utils.SHARED_PREFERENCES_NAME;
+import static example.com.cominghome.app.App.TAG;
+import static example.com.cominghome.utils.Utils.RECORD_MODE_KEY;
 import static example.com.cominghome.utils.Utils.TURNING_MODE_KEY;
+import static example.com.cominghome.utils.Utils.getAppPreferences;
 
 public class LocationService extends Service {
 
@@ -43,10 +43,12 @@ public class LocationService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(App.TAG, "Service: onCreate");
+        Log.d(TAG, "Service: onCreate");
 
         DBHelper helper = DBManager.getHelper();
         routeTable = helper.getRouteTable();
+
+        isRecordingMode = getAppPreferences(this).getBoolean(RECORD_MODE_KEY, false);
 
         manager = (LocationManager) getSystemService(LOCATION_SERVICE);
         listener = new LocalLocationListener();
@@ -83,10 +85,24 @@ public class LocationService extends Service {
             savePoint(lastLoc);
         } else isFirstPoint = true;
         isRecordingMode = true;
+
+        Log.d(TAG, "startRecord");
+
+        getAppPreferences(this)
+                .edit()
+                .putBoolean(RECORD_MODE_KEY, true)
+                .commit();
+
     }
 
     public void stopRecord() {
         isRecordingMode = false;
+        Log.d(TAG, "stopRecord");
+
+        getAppPreferences(this)
+                .edit()
+                .putBoolean(RECORD_MODE_KEY, false)
+                .commit();
     }
 
     public static boolean isRecordingMode() {
@@ -94,8 +110,10 @@ public class LocationService extends Service {
     }
 
     private void savePoint(Location loc) {
-        if (!routeTable.contains(loc))
-            routeTable.addRoutePoint(new RoutePoint(++pointNumber + "", loc.getLatitude() + "", loc.getLongitude() + ""));
+        if (!routeTable.contains(loc)) {
+            boolean res = routeTable.addRoutePoint(new RoutePoint(++pointNumber + "", loc.getLatitude() + "", loc.getLongitude() + ""));
+            Log.d(TAG, res + "");
+        }
     }
 
     @Override
@@ -127,13 +145,11 @@ public class LocationService extends Service {
             lastLoc = loc;
 
             // for map rotation
-            SharedPreferences prefs = getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
-            if (prefs.getBoolean(TURNING_MODE_KEY, false))
-            {
+            if (getAppPreferences(LocationService.this).getBoolean(TURNING_MODE_KEY, false)) {
                 GeomagneticField field = new GeomagneticField(
-                        (float)loc.getLatitude(),
-                        (float)loc.getLongitude(),
-                        (float)loc.getAltitude(),
+                        (float) loc.getLatitude(),
+                        (float) loc.getLongitude(),
+                        (float) loc.getAltitude(),
                         System.currentTimeMillis()
                 );
 

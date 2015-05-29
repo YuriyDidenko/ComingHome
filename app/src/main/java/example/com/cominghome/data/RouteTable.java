@@ -116,6 +116,10 @@ public class RouteTable {
         return point;
     }
 
+    public boolean isEmpty() {
+        return getFirstLocation() == null;
+    }
+
     public boolean contains(RoutePoint point) {
         return getFullRoute().contains(point);
     }

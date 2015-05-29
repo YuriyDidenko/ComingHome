@@ -1,8 +1,6 @@
 package example.com.cominghome.ui;
 
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
@@ -17,7 +15,6 @@ import android.widget.Toast;
 import com.google.android.gms.maps.GoogleMap;
 
 import example.com.cominghome.R;
-import example.com.cominghome.app.App;
 import example.com.cominghome.background.LocationService;
 import example.com.cominghome.ui.fragments.AboutFragment;
 import example.com.cominghome.ui.fragments.AskDialogFragment;
@@ -27,16 +24,17 @@ import example.com.cominghome.utils.DrawerExpItemAdapter;
 import example.com.cominghome.utils.DrawerItem;
 import example.com.cominghome.utils.Utils;
 
+import static example.com.cominghome.utils.Utils.BTN_GO_STATE_KEY;
 import static example.com.cominghome.utils.Utils.GROUP_ABOUT;
 import static example.com.cominghome.utils.Utils.GROUP_MAP;
 import static example.com.cominghome.utils.Utils.GROUP_MAP_VIEW;
 import static example.com.cominghome.utils.Utils.GROUP_OPTIONS;
 import static example.com.cominghome.utils.Utils.GROUP_RESET;
-import static example.com.cominghome.utils.Utils.SHARED_PREFERENCES_NAME;
 import static example.com.cominghome.utils.Utils.TRACK_MODE_ASK;
 import static example.com.cominghome.utils.Utils.TRACK_MODE_KEY;
 import static example.com.cominghome.utils.Utils.TRACK_MODE_OFF;
 import static example.com.cominghome.utils.Utils.TRACK_MODE_ON;
+import static example.com.cominghome.utils.Utils.getAppPreferences;
 
 
 public class MainActivity extends FragmentActivity {
@@ -98,11 +96,9 @@ public class MainActivity extends FragmentActivity {
                     break;
                 case GROUP_MAP_VIEW:
                     currentFragment = null;
-//                    drawerItems[GROUP_MAP_VIEW].setIcon(android.R.drawable.arrow_up_float);
                     break;
                 case GROUP_RESET:
-                    //
-                    currentFragment = null;
+                    (findViewById(R.id.btn_reset)).performClick();
                     break;
                 case GROUP_OPTIONS:
                     currentFragment = new OptionsFragment();
@@ -182,23 +178,34 @@ public class MainActivity extends FragmentActivity {
 
     // define if we need to show dialog
     private void startDialogIfNeeded() {
-        SharedPreferences prefs = getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
-        switch (prefs.getInt(TRACK_MODE_KEY, TRACK_MODE_ON)) {
-            case TRACK_MODE_ON: // запускаем, если не запущено
+        switch (getAppPreferences(this).getInt(TRACK_MODE_KEY, TRACK_MODE_ON)) {
+            case TRACK_MODE_ON:
                 Toast.makeText(this, "track mode on", Toast.LENGTH_SHORT).show();
-                if (!App.isServiceRunning(this, LocationService.class))
-                    startService(new Intent(LocationService.ACTION_START_RECORD));
+                //if (!App.isServiceRunning(this, LocationService.class))
+//                    startService(new Intent(LocationService.ACTION_START_RECORD));
+                // ничего не нужно запускать, ибо запущен и так
+                if (LocationService.isRecordingMode())
+                    getAppPreferences(this)
+                            .edit()
+                            .putBoolean(BTN_GO_STATE_KEY, false)
+                            .commit();
                 finish();
                 break;
-            case TRACK_MODE_OFF: // останавливаем запись
+            case TRACK_MODE_OFF: // останавливаем запись, если запущен
                 Toast.makeText(this, "track mode off", Toast.LENGTH_SHORT).show();
-                startService(new Intent(LocationService.ACTION_STOP_RECORD));
+                if (LocationService.isRecordingMode()) {
+                    startService(new Intent(LocationService.ACTION_STOP_RECORD));
+                }
                 finish();
                 break;
-            case TRACK_MODE_ASK:
+            case TRACK_MODE_ASK: // не показываем диалог, если остановлена запись
                 Toast.makeText(this, "track mode ask", Toast.LENGTH_SHORT).show();
-                AskDialogFragment dialog = new AskDialogFragment();
-                dialog.show(getSupportFragmentManager(), "swaaag taaag");
+                if (LocationService.isRecordingMode()) {
+                    AskDialogFragment dialog = new AskDialogFragment();
+                    dialog.show(getSupportFragmentManager(), "swaaag taaag");
+                } else {
+                    finish();
+                }
                 break;
         }
     }
