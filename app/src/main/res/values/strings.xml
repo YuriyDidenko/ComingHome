@@ -23,4 +23,14 @@
 
     <string name="drawer_open">Open navigation drawer</string>
     <string name="drawer_close">Close navigation drawer</string>
+
+
+    <string name="area_point_a">Point A</string>
+    <string name="area_point_a_value">Point A value</string>
+
+    <string name="area_point_b">Point B</string>
+    <string name="area_point_b_value">Point B value</string>
+
+    <string name="area_point_me">I am here</string>
+    <string name="area_point_me_value">I am here</string>
 </resources>

@@ -1,4 +1,4 @@
-package example.com.cominghome.data;
+package example.com.cominghome.data.database;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;

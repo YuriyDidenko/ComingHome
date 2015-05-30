@@ -1,7 +1,11 @@
-package example.com.cominghome.ui;
+package example.com.cominghome.ui.activities;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -12,17 +16,23 @@ import android.widget.ImageView;
 import example.com.cominghome.R;
 import example.com.cominghome.app.App;
 import example.com.cominghome.background.LocationService;
-import example.com.cominghome.data.DBManager;
-import example.com.cominghome.data.RouteTable;
+import example.com.cominghome.data.database.DBManager;
+import example.com.cominghome.data.database.RouteTable;
 
 public class Logo extends Activity {
     private RouteTable routeTable;
+    private ImageView imgLogo;
+    private Receiver receiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.logo);
+        imgLogo = (ImageView) findViewById(R.id.img_logo);
         Log.d(App.TAG, "Logo: onCreate");
+
+        receiver = new Receiver();
+        registerReceiver(receiver, receiver.getBroadcastFilter());
 
         Intent intentService = new Intent(this, LocationService.class);
         if (!App.isServiceRunning(this, LocationService.class)) {
@@ -60,6 +70,7 @@ public class Logo extends Activity {
     @Override
     protected void onDestroy() {
         Log.d(App.TAG, "Logo: onDestroy");
+        unregisterReceiver(receiver);
         super.onDestroy();
     }
 
@@ -82,5 +93,19 @@ public class Logo extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
+    }
+
+    private class Receiver extends BroadcastReceiver {
+
+        private IntentFilter getBroadcastFilter() {
+            return new IntentFilter(LocationService.ACTION_LOCATION_WAS_FOUND);
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (LocationService.ACTION_LOCATION_WAS_FOUND.equals(intent.getAction())) {
+                imgLogo.setBackgroundColor(Color.BLACK);
+            }
+        }
     }
 }

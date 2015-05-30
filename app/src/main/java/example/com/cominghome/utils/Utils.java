@@ -2,9 +2,15 @@ package example.com.cominghome.utils;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.location.Address;
+import android.location.Geocoder;
 
-import example.com.cominghome.data.DBManager;
-import example.com.cominghome.data.RouteTable;
+import com.google.android.gms.maps.model.LatLng;
+
+import java.util.List;
+
+import example.com.cominghome.data.database.DBManager;
+import example.com.cominghome.data.database.RouteTable;
 
 public class Utils {
     public static final String SHARED_PREFERENCES_NAME = "prefs";
@@ -32,6 +38,7 @@ public class Utils {
     // that was selected exactly
     public static final String TRACK_MODE_RADIO_BUTTON_ID_KEY = "track mode radio button id key";
     public static final String TURNING_MODE_KEY = "turning mode key";
+    public static final String ADDITIONAL_INFO_MODE_KEY = "add info mode key";
 
 
     private static RouteTable routeTable = DBManager.getHelper().getRouteTable();
@@ -40,6 +47,25 @@ public class Utils {
         SharedPreferences prefs = context.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
 
         return prefs;
+    }
+
+    public static String getAddress(Context context, LatLng coords) {
+        String curAddress = "";
+        try {
+            Geocoder geocoder = new Geocoder(context);
+            List<Address> adds = geocoder.getFromLocation(coords.latitude, coords.longitude, 1);
+            if (adds != null && adds.size() > 0) {
+                Address add = adds.get(0);
+                int max = add.getMaxAddressLineIndex();
+                if (max != -1) {
+                    for (int i = 0; i < max; i++)
+                        curAddress += add.getAddressLine(i) + " ";
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return curAddress;
     }
 
     // сюда надо будет попробовать впилить шаред префс и прочие дополнительные методы и выпилить из MapsFragment

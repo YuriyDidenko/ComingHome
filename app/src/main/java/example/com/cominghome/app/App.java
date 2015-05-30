@@ -7,7 +7,7 @@ import android.content.res.Configuration;
 import android.location.Location;
 import android.util.Log;
 
-import example.com.cominghome.data.DBManager;
+import example.com.cominghome.data.database.DBManager;
 
 public class App extends Application {
     public static final String TAG = "logs";

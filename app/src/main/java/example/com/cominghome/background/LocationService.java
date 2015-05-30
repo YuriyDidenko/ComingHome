@@ -9,12 +9,13 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
+import android.widget.Toast;
 
 import example.com.cominghome.app.App;
-import example.com.cominghome.data.DBHelper;
-import example.com.cominghome.data.DBManager;
-import example.com.cominghome.data.RoutePoint;
-import example.com.cominghome.data.RouteTable;
+import example.com.cominghome.data.database.DBHelper;
+import example.com.cominghome.data.database.DBManager;
+import example.com.cominghome.data.database.RoutePoint;
+import example.com.cominghome.data.database.RouteTable;
 
 import static example.com.cominghome.app.App.TAG;
 import static example.com.cominghome.utils.Utils.RECORD_MODE_KEY;
@@ -28,8 +29,10 @@ public class LocationService extends Service {
     public static final String ACTION_SEND_FIRST_POINT = "ACTION_SEND_FIRST_POINT";
     public static final String EXTRA_FIRST_POINT = "EXTRA_FIRST_POINT";
 
+    public static final String ACTION_LOCATION_WAS_FOUND = "ACTION_LOCATION_WAS_FOUND";
+
     private static boolean isRecordingMode = false;
-    private boolean isFirstPoint;
+    private boolean isFirstPoint = true;
 
     private Location lastLoc;
     private LocationManager manager;
@@ -131,9 +134,14 @@ public class LocationService extends Service {
 
             if (App.getApp(LocationService.this).getMe() == null ||
                     (App.getApp(LocationService.this).getMe().getLatitude() != loc.getLatitude()) &&
-                            App.getApp(LocationService.this).getMe().getLongitude() != loc.getLongitude())
+                            App.getApp(LocationService.this).getMe().getLongitude() != loc.getLongitude()) {
                 App.getApp(LocationService.this).setMe(loc);
-
+                if (isFirstPoint) {
+                    sendBroadcast(new Intent(ACTION_LOCATION_WAS_FOUND));
+                    Toast.makeText(App.getApp(LocationService.this),
+                            "My location has been found", Toast.LENGTH_LONG).show();
+                }
+            }
 
             if (isRecordingMode) {
                 savePoint(loc);

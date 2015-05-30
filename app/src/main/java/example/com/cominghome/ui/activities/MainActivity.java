@@ -1,4 +1,4 @@
-package example.com.cominghome.ui;
+package example.com.cominghome.ui.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -20,8 +20,8 @@ import example.com.cominghome.ui.fragments.AboutFragment;
 import example.com.cominghome.ui.fragments.AskDialogFragment;
 import example.com.cominghome.ui.fragments.MapsFragment;
 import example.com.cominghome.ui.fragments.OptionsFragment;
-import example.com.cominghome.utils.DrawerExpItemAdapter;
-import example.com.cominghome.utils.DrawerItem;
+import example.com.cominghome.data.drawer_menu.DrawerExpItemAdapter;
+import example.com.cominghome.data.drawer_menu.DrawerItem;
 import example.com.cominghome.utils.Utils;
 
 import static example.com.cominghome.utils.Utils.BTN_GO_STATE_KEY;
@@ -98,7 +98,8 @@ public class MainActivity extends FragmentActivity {
                     currentFragment = null;
                     break;
                 case GROUP_RESET:
-                    (findViewById(R.id.btn_reset)).performClick();
+                    if (currentFragment instanceof MapsFragment)
+                        (findViewById(R.id.btn_reset)).performClick();
                     break;
                 case GROUP_OPTIONS:
                     currentFragment = new OptionsFragment();
@@ -180,7 +181,7 @@ public class MainActivity extends FragmentActivity {
     private void startDialogIfNeeded() {
         switch (getAppPreferences(this).getInt(TRACK_MODE_KEY, TRACK_MODE_ON)) {
             case TRACK_MODE_ON:
-                Toast.makeText(this, "track mode on", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(this, "track mode on", Toast.LENGTH_SHORT).show();
                 //if (!App.isServiceRunning(this, LocationService.class))
 //                    startService(new Intent(LocationService.ACTION_START_RECORD));
                 // ничего не нужно запускать, ибо запущен и так

@@ -54,6 +54,14 @@
                 android:text="turning mode"
                 android:textColor="@android:color/black" />
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="100dp"
+                android:layout_marginTop="18dp"
+                android:text="show additional info"
+                android:textColor="@android:color/black" />
+
         </LinearLayout>
 
         <LinearLayout
@@ -99,6 +107,15 @@
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="20dp"
                 android:layout_marginTop="10dp"
+                android:checked="false"
+                android:theme="@style/MyCheckBox" />
+
+            <CheckBox
+                android:id="@+id/check_box_add_info_mode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="20dp"
+                android:layout_marginTop="7dp"
                 android:checked="false"
                 android:theme="@style/MyCheckBox" />
         </LinearLayout>

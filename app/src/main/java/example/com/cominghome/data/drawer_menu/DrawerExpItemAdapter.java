@@ -1,4 +1,4 @@
-package example.com.cominghome.utils;
+package example.com.cominghome.data.drawer_menu;
 
 import android.app.Activity;
 import android.content.Context;
@@ -78,7 +78,6 @@ public class DrawerExpItemAdapter extends BaseExpandableListAdapter {
         TextView groupText = (TextView) convertView.findViewById(R.id.textViewNameExp);
         imageGroup.setImageResource(items[groupPosition].getIcon());
         groupText.setText(items[groupPosition].getName());
-//        groupText.setText((String) getGroup(groupPosition));
 
         return convertView;
     }

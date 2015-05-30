@@ -1,4 +1,4 @@
-package example.com.cominghome.data;
+package example.com.cominghome.data.database;
 
 public class RoutePoint {
     public static final String FIELD_ID = "_id";
@@ -29,6 +29,7 @@ public class RoutePoint {
 
     @Override
     public boolean equals(Object o) {
+        // if (o instanceof RoutePoint)
         RoutePoint point = (RoutePoint) o;
         return id.equals(point.getId()) &&
                 latitude.equals(point.getLatitude()) &&

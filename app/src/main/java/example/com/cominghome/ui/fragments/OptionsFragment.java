@@ -13,6 +13,7 @@ import android.widget.RadioGroup;
 
 import example.com.cominghome.R;
 
+import static example.com.cominghome.utils.Utils.ADDITIONAL_INFO_MODE_KEY;
 import static example.com.cominghome.utils.Utils.TRACK_MODE_ASK;
 import static example.com.cominghome.utils.Utils.TRACK_MODE_KEY;
 import static example.com.cominghome.utils.Utils.TRACK_MODE_OFF;
@@ -37,7 +38,7 @@ public class OptionsFragment extends Fragment {
 //        RadioButton rbAskTrack = (RadioButton) rootView.findViewById(R.id.rb_ask_track);
 
         CheckBox chbTurningMode = (CheckBox) rootView.findViewById(R.id.check_box_turning_mode);
-
+        CheckBox chbAddInfoMode = (CheckBox) rootView.findViewById(R.id.check_box_add_info_mode);
 
         radioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
@@ -64,11 +65,18 @@ public class OptionsFragment extends Fragment {
         });
         radioGroup.check(getOldSelectedId());
         chbTurningMode.setChecked(getOldTurningMode());
+        chbAddInfoMode.setChecked(getOldAddInfoMode());
 
         chbTurningMode.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 saveOption(getActivity(), TURNING_MODE_KEY, isChecked);
+            }
+        });
+        chbAddInfoMode.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                saveOption(getActivity(), ADDITIONAL_INFO_MODE_KEY, isChecked);
             }
         });
 
@@ -95,5 +103,9 @@ public class OptionsFragment extends Fragment {
 
     private boolean getOldTurningMode() {
         return getAppPreferences(getActivity()).getBoolean(TURNING_MODE_KEY, false);
+    }
+
+    private boolean getOldAddInfoMode() {
+        return getAppPreferences(getActivity()).getBoolean(ADDITIONAL_INFO_MODE_KEY, true);
     }
 }
