@@ -7,7 +7,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.DialogFragment;
-import android.widget.Toast;
 
 import example.com.cominghome.app.App;
 import example.com.cominghome.background.LocationService;
@@ -36,7 +35,8 @@ public class AskDialogFragment extends DialogFragment implements DialogInterface
         switch (which) {
             case Dialog.BUTTON_POSITIVE:
 
-                Toast.makeText(getActivity(), "yes", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(getActivity(), "yes", Toast.LENGTH_SHORT).show();
+
                 // saving radio button state
                 OptionsFragment.saveOption(getActivity(), TRACK_MODE_KEY, TRACK_MODE_ON);
                 // running, if the service is sleeping
@@ -47,14 +47,18 @@ public class AskDialogFragment extends DialogFragment implements DialogInterface
                 break;
             case Dialog.BUTTON_NEGATIVE:
 
-                Toast.makeText(getActivity(), "no", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(getActivity(), "no", Toast.LENGTH_SHORT).show();
+
                 getActivity().startService(new Intent(LocationService.ACTION_STOP_RECORD));
+                getActivity().stopService(new Intent(getActivity(), LocationService.class));
+
                 OptionsFragment.saveOption(getActivity(), TRACK_MODE_KEY, TRACK_MODE_OFF);
+
                 getActivity().finish();
 
                 break;
             case Dialog.BUTTON_NEUTRAL:
-                Toast.makeText(getActivity(), "cancel", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(getActivity(), "cancel", Toast.LENGTH_SHORT).show();
                 break;
         }
     }

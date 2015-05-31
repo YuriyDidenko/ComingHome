@@ -10,20 +10,20 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.ExpandableListView;
-import android.widget.Toast;
 
 import com.google.android.gms.maps.GoogleMap;
 
 import example.com.cominghome.R;
 import example.com.cominghome.background.LocationService;
+import example.com.cominghome.data.drawer_menu.DrawerExpItemAdapter;
+import example.com.cominghome.data.drawer_menu.DrawerItem;
 import example.com.cominghome.ui.fragments.AboutFragment;
 import example.com.cominghome.ui.fragments.AskDialogFragment;
 import example.com.cominghome.ui.fragments.MapsFragment;
 import example.com.cominghome.ui.fragments.OptionsFragment;
-import example.com.cominghome.data.drawer_menu.DrawerExpItemAdapter;
-import example.com.cominghome.data.drawer_menu.DrawerItem;
 import example.com.cominghome.utils.Utils;
 
+import static example.com.cominghome.utils.Utils.BTN_GO_HOME_STATE_KEY;
 import static example.com.cominghome.utils.Utils.BTN_GO_STATE_KEY;
 import static example.com.cominghome.utils.Utils.GROUP_ABOUT;
 import static example.com.cominghome.utils.Utils.GROUP_MAP;
@@ -193,15 +193,16 @@ public class MainActivity extends FragmentActivity {
                 finish();
                 break;
             case TRACK_MODE_OFF: // останавливаем запись, если запущен
-                Toast.makeText(this, "track mode off", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(this, "track mode off", Toast.LENGTH_SHORT).show();
                 if (LocationService.isRecordingMode()) {
                     startService(new Intent(LocationService.ACTION_STOP_RECORD));
                 }
                 finish();
                 break;
             case TRACK_MODE_ASK: // не показываем диалог, если остановлена запись
-                Toast.makeText(this, "track mode ask", Toast.LENGTH_SHORT).show();
-                if (LocationService.isRecordingMode()) {
+//                Toast.makeText(this, "track mode ask", Toast.LENGTH_SHORT).show();
+                if (!getAppPreferences(this).getBoolean(BTN_GO_STATE_KEY, true) ||
+                        !getAppPreferences(this).getBoolean(BTN_GO_HOME_STATE_KEY, true)) {
                     AskDialogFragment dialog = new AskDialogFragment();
                     dialog.show(getSupportFragmentManager(), "swaaag taaag");
                 } else {

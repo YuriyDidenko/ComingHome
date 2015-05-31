@@ -33,10 +33,6 @@ public class OptionsFragment extends Fragment {
 
         RadioGroup radioGroup = (RadioGroup) rootView.findViewById(R.id.radio_group);
 
-//        RadioButton rbTrack = (RadioButton) rootView.findViewById(R.id.rb_track);
-//        RadioButton rbNotTrack = (RadioButton) rootView.findViewById(R.id.rb_not_track);
-//        RadioButton rbAskTrack = (RadioButton) rootView.findViewById(R.id.rb_ask_track);
-
         CheckBox chbTurningMode = (CheckBox) rootView.findViewById(R.id.check_box_turning_mode);
         CheckBox chbAddInfoMode = (CheckBox) rootView.findViewById(R.id.check_box_add_info_mode);
 

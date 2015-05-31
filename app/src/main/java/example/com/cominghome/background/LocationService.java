@@ -18,6 +18,9 @@ import example.com.cominghome.data.database.RoutePoint;
 import example.com.cominghome.data.database.RouteTable;
 
 import static example.com.cominghome.app.App.TAG;
+import static example.com.cominghome.app.App.getApp;
+import static example.com.cominghome.utils.Utils.BTN_GO_HOME_STATE_KEY;
+import static example.com.cominghome.utils.Utils.BTN_GO_STATE_KEY;
 import static example.com.cominghome.utils.Utils.RECORD_MODE_KEY;
 import static example.com.cominghome.utils.Utils.TURNING_MODE_KEY;
 import static example.com.cominghome.utils.Utils.getAppPreferences;
@@ -26,10 +29,15 @@ public class LocationService extends Service {
 
     public static final String ACTION_START_RECORD = "ACTION_START_RECORD";
     public static final String ACTION_STOP_RECORD = "ACTION_STOP_RECORD";
+
+    public static final String ACTION_LOCATION_WAS_FOUND = "ACTION_LOCATION_WAS_FOUND";
+
     public static final String ACTION_SEND_FIRST_POINT = "ACTION_SEND_FIRST_POINT";
     public static final String EXTRA_FIRST_POINT = "EXTRA_FIRST_POINT";
 
-    public static final String ACTION_LOCATION_WAS_FOUND = "ACTION_LOCATION_WAS_FOUND";
+    public static final String ACTION_UPDATE_CURRENT_MARKER_LOCATION = "ACTION_UPDATE_CURRENT_MARKER_LOCATION";
+    public static final String EXTRA_NEW_CURRENT_LOCATION = "EXTRA_UPDATED_CURRENT_LOCATION";
+
 
     private static boolean isRecordingMode = false;
     private boolean isFirstPoint = true;
@@ -56,7 +64,7 @@ public class LocationService extends Service {
         manager = (LocationManager) getSystemService(LOCATION_SERVICE);
         listener = new LocalLocationListener();
 
-        manager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, listener);
+        manager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 5, listener);
     }
 
     @Override
@@ -86,7 +94,7 @@ public class LocationService extends Service {
         if (lastLoc != null) {
             sendBroadcast(new Intent(ACTION_SEND_FIRST_POINT).putExtra(EXTRA_FIRST_POINT, lastLoc));
             savePoint(lastLoc);
-        } else isFirstPoint = true;
+        } //else isFirstPoint = true;
         isRecordingMode = true;
 
         Log.d(TAG, "startRecord");
@@ -114,8 +122,7 @@ public class LocationService extends Service {
 
     private void savePoint(Location loc) {
         if (!routeTable.contains(loc)) {
-            boolean res = routeTable.addRoutePoint(new RoutePoint(++pointNumber + "", loc.getLatitude() + "", loc.getLongitude() + ""));
-            Log.d(TAG, res + "");
+            routeTable.addRoutePoint(new RoutePoint(++pointNumber + "", loc.getLatitude() + "", loc.getLongitude() + ""));
         }
     }
 
@@ -136,11 +143,7 @@ public class LocationService extends Service {
                     (App.getApp(LocationService.this).getMe().getLatitude() != loc.getLatitude()) &&
                             App.getApp(LocationService.this).getMe().getLongitude() != loc.getLongitude()) {
                 App.getApp(LocationService.this).setMe(loc);
-                if (isFirstPoint) {
-                    sendBroadcast(new Intent(ACTION_LOCATION_WAS_FOUND));
-                    Toast.makeText(App.getApp(LocationService.this),
-                            "My location has been found", Toast.LENGTH_LONG).show();
-                }
+
             }
 
             if (isRecordingMode) {
@@ -149,8 +152,22 @@ public class LocationService extends Service {
                     sendBroadcast(new Intent(ACTION_SEND_FIRST_POINT).putExtra(EXTRA_FIRST_POINT, loc));
                     isFirstPoint = false;
                 }
+            } else {
+                if (isFirstPoint) {
+                    sendBroadcast(new Intent(ACTION_LOCATION_WAS_FOUND));
+                    Toast.makeText(App.getApp(LocationService.this),
+                            "My location has been found", Toast.LENGTH_LONG).show();
+                }
             }
+
             lastLoc = loc;
+
+            // for current marker location update
+            if (!getAppPreferences(getApp(LocationService.this)).getBoolean(BTN_GO_STATE_KEY, true) ||
+                    !getAppPreferences(getApp(LocationService.this)).getBoolean(BTN_GO_HOME_STATE_KEY, true)) {
+                sendBroadcast(new Intent(ACTION_UPDATE_CURRENT_MARKER_LOCATION)
+                        .putExtra(EXTRA_NEW_CURRENT_LOCATION, loc));
+            }
 
             // for map rotation
             if (getAppPreferences(LocationService.this).getBoolean(TURNING_MODE_KEY, false)) {

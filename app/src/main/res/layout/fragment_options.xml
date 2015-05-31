@@ -8,98 +8,48 @@
         android:id="@+id/linearLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_centerVertical="true"
         android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:orientation="horizontal">
+        android:layout_alignParentStart="true">
 
-        <LinearLayout
+        <RadioGroup
+            android:id="@+id/radio_group"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:layout_gravity="center">
 
-            <TextView
-                android:id="@+id/textView"
+            <RadioButton
+                android:id="@+id/rb_track"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="10dp"
+                android:layout_marginLeft="20dp"
                 android:layout_marginTop="10dp"
+                android:checked="true"
                 android:text="continue track after the app closing"
-                android:textColor="@android:color/black" />
+                android:theme="@style/MyRadioButton"
+                android:textSize="15sp" />
 
-            <TextView
-                android:id="@+id/textView2"
+            <RadioButton
+                android:id="@+id/rb_not_track"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="10dp"
-                android:layout_marginTop="15dp"
+                android:layout_marginLeft="20dp"
+                android:checked="false"
                 android:text="doesn&apos;t track after the app closing   "
-                android:textColor="@android:color/black" />
+                android:theme="@style/MyRadioButton"
+                android:textSize="15sp" />
 
-            <TextView
-                android:id="@+id/textView3"
+            <RadioButton
+                android:id="@+id/rb_ask_track"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="10dp"
-                android:layout_marginTop="13dp"
+                android:layout_marginLeft="20dp"
+                android:checked="false"
                 android:text="ask before the  application closing  "
-                android:textColor="@android:color/black" />
-
-            <TextView
-                android:id="@+id/textView4"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="140dp"
-                android:layout_marginTop="18dp"
-                android:text="turning mode"
-                android:textColor="@android:color/black" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="100dp"
-                android:layout_marginTop="18dp"
-                android:text="show additional info"
-                android:textColor="@android:color/black" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <RadioGroup
-                android:id="@+id/radio_group"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <RadioButton
-                    android:id="@+id/rb_track"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="20dp"
-                    android:layout_marginTop="3dp"
-                    android:checked="true"
-                    android:theme="@style/MyRadioButton" />
-
-                <RadioButton
-                    android:id="@+id/rb_not_track"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="20dp"
-                    android:checked="false"
-                    android:theme="@style/MyRadioButton" />
-
-                <RadioButton
-                    android:id="@+id/rb_ask_track"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="20dp"
-                    android:checked="false"
-                    android:theme="@style/MyRadioButton" />
-            </RadioGroup>
+                android:theme="@style/MyRadioButton"
+                android:textSize="15sp" />
 
             <CheckBox
                 android:id="@+id/check_box_turning_mode"
@@ -108,17 +58,22 @@
                 android:layout_marginLeft="20dp"
                 android:layout_marginTop="10dp"
                 android:checked="false"
-                android:theme="@style/MyCheckBox" />
+                android:text="turning mode"
+                android:theme="@style/MyCheckBox"
+                android:textSize="15sp" />
 
             <CheckBox
                 android:id="@+id/check_box_add_info_mode"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="20dp"
-                android:layout_marginTop="7dp"
+                android:layout_marginTop="10dp"
                 android:checked="false"
-                android:theme="@style/MyCheckBox" />
-        </LinearLayout>
+                android:text="show additional info"
+                android:theme="@style/MyCheckBox"
+                android:textSize="15sp" />
+        </RadioGroup>
+
     </LinearLayout>
 
 </RelativeLayout>

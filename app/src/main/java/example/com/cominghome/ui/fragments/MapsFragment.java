@@ -40,6 +40,8 @@ import static example.com.cominghome.app.App.TAG;
 import static example.com.cominghome.utils.Utils.ADDITIONAL_INFO_MODE_KEY;
 import static example.com.cominghome.utils.Utils.BTN_GO_HOME_STATE_KEY;
 import static example.com.cominghome.utils.Utils.BTN_GO_STATE_KEY;
+import static example.com.cominghome.utils.Utils.TRACK_MODE_KEY;
+import static example.com.cominghome.utils.Utils.TRACK_MODE_OFF;
 import static example.com.cominghome.utils.Utils.TURNING_MODE_KEY;
 import static example.com.cominghome.utils.Utils.ZOOM_KEY;
 import static example.com.cominghome.utils.Utils.getAddress;
@@ -93,6 +95,12 @@ public class MapsFragment extends Fragment {
 
     private void setCurrentLocationZoomTMode() {
         try {
+
+            if (getAppPreferences(getActivity()).getInt(TRACK_MODE_KEY, -1) == TRACK_MODE_OFF) {
+                getActivity().findViewById(R.id.btn_reset).performClick();
+                return;
+            }
+
             LatLng latLngCurrent = new LatLng(
                     App.getApp(getActivity()).getMe().getLatitude(),
                     App.getApp(getActivity()).getMe().getLongitude());
@@ -125,6 +133,7 @@ public class MapsFragment extends Fragment {
             }
 
             currentLocation.setRotation(0);
+
         } catch (Exception e) {
             Toast.makeText(App.getApp(getActivity()),
                     "check your connection or availability of GPS-module", Toast.LENGTH_LONG).show();
@@ -181,6 +190,8 @@ public class MapsFragment extends Fragment {
                             .putBoolean(BTN_GO_STATE_KEY, false)
                             .commit();
                 } catch (Exception e) {
+                    Toast.makeText(getActivity(),
+                            "Cannot find your location :(", Toast.LENGTH_SHORT).show();
                     e.printStackTrace();
                 }
             }
@@ -203,7 +214,8 @@ public class MapsFragment extends Fragment {
 
                     getActivity().startService(new Intent(LocationService.ACTION_STOP_RECORD));
                 } catch (Exception e) {
-                    Toast.makeText(getActivity(), e.toString(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getActivity(),
+                            "At first you need to \"Go\" somewhere :)", Toast.LENGTH_SHORT).show();
                     e.printStackTrace();
                 }
             }
@@ -222,8 +234,9 @@ public class MapsFragment extends Fragment {
                     btnGo.setEnabled(true);
                     btnGoHome.setEnabled(true);
 
-                    tvPointA.setText(getString(R.string.area_point_a_value));
-                    tvPointB.setText(getString(R.string.area_point_b_value));
+                    tvPointA.setText("");
+                    tvPointB.setText("");
+                    tvPointMe.setText("");
 
                     getAppPreferences(getActivity())
                             .edit()
@@ -233,7 +246,6 @@ public class MapsFragment extends Fragment {
                     manager.unregisterListener(mapListener);
 
                 } catch (Exception e) {
-                    Toast.makeText(getActivity(), e.toString(), Toast.LENGTH_SHORT).show();
                     e.printStackTrace();
                 }
             }
@@ -250,7 +262,6 @@ public class MapsFragment extends Fragment {
         editor.putFloat(ZOOM_KEY, mMap.getCameraPosition().zoom);
         editor.apply();
 
-        //Log.d(App.TAG, "data was saved: 1 enabled - " + btnGo.isEnabled() + ", 2 enabled - " + btnGoHome.isEnabled());
     }
 
     private void setButtonsState() {
@@ -280,9 +291,9 @@ public class MapsFragment extends Fragment {
 
         } catch (NumberFormatException e) {
             e.printStackTrace();
+        } catch (NullPointerException e) {
+            Toast.makeText(getActivity(), "Cannot find your location :(", Toast.LENGTH_SHORT).show();
         }
-
-        //Log.d(App.TAG, "data was loaded: 1 enabled - " + isGoEnabled + ", 2 enabled - " + isGoHomeEnabled);
     }
 
     private boolean showAdditionalInfo() {
@@ -333,29 +344,11 @@ public class MapsFragment extends Fragment {
         super.onDestroy();
     }
 
-//    @Override
-//    public void onResume() {
-//        super.onResume();
-//        Log.d(TAG, "onResume");
-//
-//
-//        //setCurrentLocationZoomTMode();
-//
-//    }
-//
-//    @Override
-//    public void onStart() {
-//        super.onStart();
-//        Log.d(TAG, "onStart");
-//        //setButtonsState();
-//    }
-
     @Override
     public void onStop() {
         saveMapState();
         super.onStop();
         Log.d(TAG, "onStop");
-//        saveMapState();
     }
 
     private class LocationReceiver extends BroadcastReceiver {
@@ -366,22 +359,38 @@ public class MapsFragment extends Fragment {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (LocationService.ACTION_SEND_FIRST_POINT.equals(intent.getAction())) {
+            switch (intent.getAction()) {
+                case LocationService.ACTION_SEND_FIRST_POINT:
 
-                Location firstLoc = intent.getParcelableExtra(LocationService.EXTRA_FIRST_POINT);
+                    Location firstLoc = intent.getParcelableExtra(LocationService.EXTRA_FIRST_POINT);
 
-                beginLocation = mMap.addMarker(new MarkerOptions()
-                        .position(new LatLng(firstLoc.getLatitude(), firstLoc.getLongitude()))
-                        .title("start")
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
-                btnGo.setEnabled(false);
-                tvPointA.setText(getAddress(getActivity(), beginLocation.getPosition()) + "\n"
-                        + beginLocation.getPosition().toString());
+                    beginLocation = mMap.addMarker(new MarkerOptions()
+                            .position(new LatLng(firstLoc.getLatitude(), firstLoc.getLongitude()))
+                            .title("start")
+                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+                    btnGo.setEnabled(false);
+                    tvPointA.setText(getAddress(getActivity(), beginLocation.getPosition()) + "\n"
+                            + beginLocation.getPosition().toString());
 
-                if (currentLocation != null)
-                    currentLocation.remove();
-                currentLocation = null;
-                setCurrentLocationZoomTMode();
+                    if (currentLocation != null)
+                        currentLocation.remove();
+                    currentLocation = null;
+                    setCurrentLocationZoomTMode();
+
+                    break;
+                case LocationService.ACTION_UPDATE_CURRENT_MARKER_LOCATION:
+
+                    if (currentLocation != null) {
+                        Location newCurLocation = intent.getParcelableExtra(LocationService.EXTRA_NEW_CURRENT_LOCATION);
+                        LatLng newPosition = new LatLng(newCurLocation.getLatitude(), newCurLocation.getLongitude());
+
+                        if (currentLocation.getPosition().latitude != newPosition.latitude &&
+                                currentLocation.getPosition().longitude != newPosition.longitude) {
+                            currentLocation.setPosition(newPosition);
+                            mMap.moveCamera(CameraUpdateFactory.newLatLng(newPosition));
+                        }
+                    }
+                    break;
             }
         }
     }
